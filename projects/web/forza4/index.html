@@ -6,21 +6,22 @@
   <title>FORZA 4 — Michele vs Federico</title>
   <style>
     :root {
-      --bg:      #0e0800;
-      --wood:    #7a3b00;
-      --wood2:   #4a2000;
-      --board:   #1144cc;
-      --hole:    #060d2e;
-      --p1:      #cc1122;
-      --p1g:     #ff4455;
-      --p2:      #ffcc00;
-      --p2g:     #ffe566;
-      --gold:    #ffcc00;
-      --dim:     #886611;
-      --cream:   #fff8dc;
+      --bg:    #0e0800;
+      --board: #1144cc;
+      --hole:  #060d2e;
+      --p1:    #cc1122;
+      --p1g:   #ff4455;
+      --p2:    #ffcc00;
+      --p2g:   #ffe566;
+      --gold:  #ffcc00;
+      --dim:   #886611;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+
+    html, body {
+      width: 100%; height: 100%;
+    }
 
     body {
       font-family: 'Courier New', Courier, monospace;
@@ -30,132 +31,136 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0.6rem 0.4rem 1.2rem;
+      justify-content: center;
+      padding: clamp(0.4rem, 1.5vw, 1.2rem);
       user-select: none;
-      overflow-x: hidden;
+      overflow: hidden;
       background-image:
         repeating-linear-gradient(
           0deg,
-          rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px,
+          rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px,
           transparent 1px, transparent 3px
         );
     }
 
-    /* ── TITLE ─────────────────────────────────────────────────────── */
+    /* ── GAME WRAPPER ── fills screen, tight stack ─────────────────── */
+    .game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      /* board size drives everything — board is square-ish 7:6,
+         so board-size = min(96vw, 76dvh).
+         We expose it as a CSS var for child elements too. */
+      --bs: min(96vw, 76dvh);
+      gap: clamp(0.3rem, 1vh, 0.8rem);
+    }
+
+    /* ── TITLE ──────────────────────────────────────────────────────── */
     .title {
-      font-size: clamp(1.8rem, 8vw, 2.6rem);
+      font-size: clamp(2rem, calc(var(--bs) * 0.11), 6rem);
       font-weight: bold;
-      letter-spacing: 0.25em;
-      text-shadow: 0 0 8px var(--gold), 0 0 22px var(--gold), 3px 3px 0 #4a2800;
-      margin-bottom: 0.1rem;
+      letter-spacing: 0.22em;
+      text-shadow: 0 0 10px var(--gold), 0 0 28px var(--gold), 3px 3px 0 #4a2800;
       text-align: center;
+      line-height: 1;
     }
 
     .subtitle {
-      font-size: clamp(0.55rem, 2.5vw, 0.75rem);
-      letter-spacing: 0.15em;
+      font-size: clamp(0.5rem, calc(var(--bs) * 0.022), 1.1rem);
+      letter-spacing: 0.14em;
       color: var(--dim);
-      margin-bottom: 0.6rem;
       text-align: center;
     }
 
-    /* ── SCOREBOARD ────────────────────────────────────────────────── */
+    /* ── SCOREBOARD ─────────────────────────────────────────────────── */
     .scoreboard {
       display: flex;
       align-items: center;
-      gap: 1.2rem;
-      margin-bottom: 0.5rem;
-      width: 100%;
-      max-width: 400px;
-      justify-content: center;
+      gap: clamp(1rem, 6vw, 4rem);
     }
 
     .player-block {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.2rem;
+      gap: 0.15rem;
     }
 
     .p-name {
-      font-size: clamp(0.55rem, 2.5vw, 0.72rem);
+      font-size: clamp(0.65rem, calc(var(--bs) * 0.028), 1.5rem);
       letter-spacing: 0.12em;
       font-weight: bold;
     }
 
     .p-score {
-      font-size: clamp(2rem, 9vw, 3rem);
+      font-size: clamp(2.2rem, calc(var(--bs) * 0.12), 6rem);
       font-weight: bold;
       line-height: 1;
-      text-shadow: 0 0 10px currentColor;
+      text-shadow: 0 0 12px currentColor;
     }
 
-    .p-pips {
-      display: flex;
-      gap: 5px;
-    }
+    .p-pips { display: flex; gap: clamp(4px, 0.8vw, 10px); }
 
     .pip {
-      width: 11px;
-      height: 11px;
+      width:  clamp(10px, calc(var(--bs) * 0.018), 18px);
+      height: clamp(10px, calc(var(--bs) * 0.018), 18px);
       border-radius: 50%;
       border: 2px solid currentColor;
     }
-
     .pip.filled { background: currentColor; }
 
     .vs {
-      font-size: clamp(0.6rem, 2.5vw, 0.8rem);
+      font-size: clamp(0.6rem, calc(var(--bs) * 0.025), 1.2rem);
       color: var(--dim);
       letter-spacing: 0.2em;
     }
 
     .p1-col { color: var(--p1g); }
-    .p2-col { color: var(--p2); }
+    .p2-col { color: var(--p2);  }
 
     /* ── TURN BAR ───────────────────────────────────────────────────── */
     .turn-bar {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: clamp(0.6rem, 2.8vw, 0.8rem);
+      font-size: clamp(0.65rem, calc(var(--bs) * 0.028), 1.4rem);
       letter-spacing: 0.1em;
-      margin-bottom: 0.45rem;
-      min-height: 1.6rem;
       font-weight: bold;
+      min-height: 1.4em;
     }
 
     .t-disc {
-      width: 16px;
-      height: 16px;
+      width:  clamp(14px, calc(var(--bs) * 0.028), 24px);
+      height: clamp(14px, calc(var(--bs) * 0.028), 24px);
       border-radius: 50%;
       box-shadow: 0 0 8px currentColor;
+      flex-shrink: 0;
     }
-
     .t-disc.p1 { background: var(--p1g); color: var(--p1g); }
-    .t-disc.p2 { background: var(--p2);  color: var(--p2); }
+    .t-disc.p2 { background: var(--p2);  color: var(--p2);  }
 
     /* ── BOARD FRAME (wood) ─────────────────────────────────────────── */
     .board-wrap {
-      background:
-        linear-gradient(160deg, #9c4e00 0%, #6b3000 40%, #3d1800 100%);
-      border-radius: 10px;
-      padding: 7px 7px 10px;
+      width: var(--bs);
+      background: linear-gradient(160deg, #9c4e00 0%, #6b3000 40%, #3d1800 100%);
+      border-radius: clamp(8px, 1.5vw, 16px);
+      padding: clamp(5px, 1vw, 10px);
+      padding-bottom: clamp(7px, 1.5vw, 14px);
       box-shadow:
-        inset 0 2px 0 rgba(255,180,80,0.25),
+        inset 0 2px 0 rgba(255,180,80,0.22),
         inset 0 -4px 0 rgba(0,0,0,0.5),
-        0 10px 28px rgba(0,0,0,0.85),
+        0 12px 32px rgba(0,0,0,0.85),
         0 0 0 3px #2a1000,
-        0 0 0 6px #6b3000;
-      position: relative;
+        0 0 0 clamp(4px, 0.8vw, 8px) #6b3000;
     }
 
     /* ── COLUMN ARROWS ──────────────────────────────────────────────── */
     .col-row {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      margin-bottom: 4px;
+      gap: clamp(3px, 0.5vw, 6px);
+      margin-bottom: clamp(3px, 0.5vw, 6px);
     }
 
     .col-arrow {
@@ -163,27 +168,28 @@
       border: none;
       color: transparent;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: clamp(0.7rem, calc(var(--bs) * 0.028), 1.5rem);
       padding: 2px 0;
-      transition: color 0.15s;
       font-family: inherit;
       text-align: center;
+      transition: color 0.15s, text-shadow 0.15s;
     }
-    .col-arrow.hover-p1 { color: var(--p1g); text-shadow: 0 0 6px var(--p1); }
-    .col-arrow.hover-p2 { color: var(--p2);  text-shadow: 0 0 6px var(--p2g); }
+    .col-arrow.hover-p1 { color: var(--p1g); text-shadow: 0 0 8px var(--p1); }
+    .col-arrow.hover-p2 { color: var(--p2);  text-shadow: 0 0 8px var(--p2g); }
 
     /* ── BOARD GRID ─────────────────────────────────────────────────── */
     .board {
+      width: 100%;
       background: var(--board);
-      border-radius: 8px;
-      padding: 5px;
+      border-radius: clamp(6px, 1vw, 12px);
+      padding: clamp(4px, 0.7vw, 8px);
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(6, 1fr);
-      gap: 4px;
+      gap: clamp(3px, 0.6vw, 7px);
       box-shadow:
-        inset 0 4px 10px rgba(0,0,0,0.7),
-        inset 0 0 24px rgba(0,0,60,0.45);
+        inset 0 4px 12px rgba(0,0,0,0.7),
+        inset 0 0 28px rgba(0,0,60,0.45);
     }
 
     .cell {
@@ -191,15 +197,13 @@
       border-radius: 50%;
       background: var(--hole);
       box-shadow:
-        inset 0 3px 7px rgba(0,0,0,0.85),
+        inset 0 3px 8px rgba(0,0,0,0.85),
         inset 0 1px 2px rgba(0,0,0,0.6);
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: background 0.08s;
     }
 
-    /* glossy highlight on every hole */
     .cell::after {
       content: '';
       position: absolute;
@@ -212,19 +216,14 @@
 
     .cell.p1 {
       background: radial-gradient(circle at 36% 30%, var(--p1g), var(--p1) 75%);
-      box-shadow:
-        inset 0 -3px 6px rgba(0,0,0,0.45),
-        0 0 7px rgba(204,17,34,0.7);
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.45), 0 0 8px rgba(204,17,34,0.7);
     }
 
     .cell.p2 {
       background: radial-gradient(circle at 36% 30%, var(--p2g), var(--p2) 75%);
-      box-shadow:
-        inset 0 -3px 6px rgba(0,0,0,0.3),
-        0 0 7px rgba(255,204,0,0.7);
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.3), 0 0 8px rgba(255,204,0,0.7);
     }
 
-    /* disc drop */
     .cell.dropping {
       animation: disc-fall var(--fall-t) cubic-bezier(0.3, 0.6, 0.4, 1) forwards;
     }
@@ -236,28 +235,22 @@
       100% { transform: translateY(0); }
     }
 
-    /* winning cells */
     .cell.winner {
       animation: win-pulse 0.45s ease-in-out infinite alternate;
     }
 
     @keyframes win-pulse {
       from { filter: brightness(1);   box-shadow: 0 0 6px rgba(255,255,255,0.4); }
-      to   { filter: brightness(2.1); box-shadow: 0 0 22px white, 0 0 40px white; }
+      to   { filter: brightness(2.2); box-shadow: 0 0 26px white, 0 0 50px white; }
     }
 
     /* ── OVERLAY ────────────────────────────────────────────────────── */
     #overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.78);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      padding: 1rem;
-      opacity: 0;
-      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; padding: 1rem;
+      opacity: 0; pointer-events: none;
       transition: opacity 0.35s;
     }
     #overlay.show { opacity: 1; pointer-events: all; }
@@ -265,18 +258,18 @@
     .msg-box {
       background: linear-gradient(150deg, #1c0e00, #090400);
       border: 3px solid var(--gold);
-      border-radius: 12px;
-      padding: 1.8rem 2rem;
+      border-radius: 14px;
+      padding: clamp(1.4rem, 4vw, 2.5rem) clamp(1.6rem, 5vw, 3rem);
       text-align: center;
-      max-width: 320px;
+      max-width: min(90vw, 520px);
       width: 100%;
-      box-shadow: 0 0 30px rgba(255,200,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+      box-shadow: 0 0 36px rgba(255,200,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
     }
 
-    .msg-icon  { font-size: 3.5rem; display: block; margin-bottom: 0.4rem; }
+    .msg-icon  { font-size: clamp(3rem, 10vw, 5rem); display: block; margin-bottom: 0.4rem; }
 
     .msg-title {
-      font-size: clamp(1.3rem, 6vw, 1.9rem);
+      font-size: clamp(1.4rem, 5vw, 2.6rem);
       font-weight: bold;
       letter-spacing: 0.12em;
       text-shadow: 0 0 14px currentColor;
@@ -284,19 +277,20 @@
     }
 
     .msg-sub {
-      font-size: clamp(0.6rem, 2.8vw, 0.8rem);
+      font-size: clamp(0.65rem, 2.5vw, 1rem);
       color: var(--dim);
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       margin-bottom: 1.4rem;
-      line-height: 1.5;
+      line-height: 1.6;
+      white-space: pre-line;
     }
 
     .msg-btn {
       font-family: inherit;
       font-weight: bold;
-      font-size: clamp(0.75rem, 3vw, 0.9rem);
+      font-size: clamp(0.8rem, 2.8vw, 1.1rem);
       letter-spacing: 0.12em;
-      padding: 0.7rem 1.8rem;
+      padding: clamp(0.6rem, 2vw, 1rem) clamp(1.4rem, 4vw, 2.5rem);
       border: 2px solid var(--gold);
       border-radius: 6px;
       background: transparent;
@@ -308,18 +302,10 @@
     .msg-btn:hover, .msg-btn:active { background: var(--gold); color: #000; }
 
     /* ── FIREWORKS ──────────────────────────────────────────────────── */
-    #fw {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 190;
-    }
+    #fw { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 190; }
 
     .sp {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0;
+      position: absolute; border-radius: 50%; opacity: 0;
       animation: sp-go var(--d) ease-out var(--dl) forwards;
     }
 
@@ -341,40 +327,40 @@
   </div>
 </div>
 
-<div class="title">FORZA&nbsp;4</div>
-<div class="subtitle">MICHELE &nbsp;·&nbsp; VS &nbsp;·&nbsp; FEDERICO &nbsp;—&nbsp; AL MEGLIO DELLE 3</div>
+<div class="game">
+  <div class="title">FORZA&nbsp;4</div>
+  <div class="subtitle">MICHELE &nbsp;·&nbsp; VS &nbsp;·&nbsp; FEDERICO &nbsp;—&nbsp; AL MEGLIO DELLE 3</div>
 
-<div class="scoreboard">
-  <div class="player-block">
-    <div class="p-name p1-col">MICHELE</div>
-    <div class="p-score p1-col" id="s1">0</div>
-    <div class="p-pips p1-col" id="pips1"></div>
+  <div class="scoreboard">
+    <div class="player-block">
+      <div class="p-name p1-col">MICHELE</div>
+      <div class="p-score p1-col" id="s1">0</div>
+      <div class="p-pips p1-col" id="pips1"></div>
+    </div>
+    <div class="vs">VS</div>
+    <div class="player-block">
+      <div class="p-name p2-col">FEDERICO</div>
+      <div class="p-score p2-col" id="s2">0</div>
+      <div class="p-pips p2-col" id="pips2"></div>
+    </div>
   </div>
-  <div class="vs">VS</div>
-  <div class="player-block">
-    <div class="p-name p2-col">FEDERICO</div>
-    <div class="p-score p2-col" id="s2">0</div>
-    <div class="p-pips p2-col" id="pips2"></div>
+
+  <div class="turn-bar">
+    <div class="t-disc p1" id="tDisc"></div>
+    <span id="tText">TURNO DI MICHELE</span>
   </div>
-</div>
 
-<div class="turn-bar">
-  <div class="t-disc p1" id="tDisc"></div>
-  <span id="tText">TURNO DI MICHELE</span>
-</div>
-
-<div class="board-wrap">
-  <div class="col-row" id="colRow"></div>
-  <div class="board"   id="board"></div>
+  <div class="board-wrap">
+    <div class="col-row" id="colRow"></div>
+    <div class="board"   id="board"></div>
+  </div>
 </div>
 
 <script>
-// ── CONSTANTS ────────────────────────────────────────────────────────────────
 const R = 6, C = 7, P1 = 1, P2 = 2;
 const NAME = { [P1]: 'MICHELE', [P2]: 'FEDERICO' };
 const WINS_NEEDED = 2;
 
-// ── STATE ────────────────────────────────────────────────────────────────────
 let grid, cur, locked, scores, gameNum;
 
 function newMatch() {
@@ -386,14 +372,13 @@ function newMatch() {
 function newGame() {
   gameNum++;
   grid   = Array.from({ length: R }, () => Array(C).fill(0));
-  cur    = gameNum % 2 === 1 ? P1 : P2; // alternate who starts
+  cur    = gameNum % 2 === 1 ? P1 : P2;
   locked = false;
   buildDOM();
   updateTurn();
   updateScore();
 }
 
-// ── DOM BUILD ────────────────────────────────────────────────────────────────
 function buildDOM() {
   const boardEl = document.getElementById('board');
   const colRow  = document.getElementById('colRow');
@@ -402,21 +387,21 @@ function buildDOM() {
 
   for (let c = 0; c < C; c++) {
     const btn = document.createElement('button');
-    btn.className    = 'col-arrow';
-    btn.textContent  = '▼';
-    btn.dataset.col  = c;
-    btn.addEventListener('click',       () => drop(c));
-    btn.addEventListener('mouseenter',  () => arrowHover(c, true));
-    btn.addEventListener('mouseleave',  () => arrowHover(c, false));
+    btn.className   = 'col-arrow';
+    btn.textContent = '▼';
+    btn.dataset.col = c;
+    btn.addEventListener('click',      () => drop(c));
+    btn.addEventListener('mouseenter', () => arrowHover(c, true));
+    btn.addEventListener('mouseleave', () => arrowHover(c, false));
     colRow.appendChild(btn);
   }
 
   for (let r = 0; r < R; r++) {
     for (let c = 0; c < C; c++) {
       const el = document.createElement('div');
-      el.className    = 'cell';
-      el.dataset.r    = r;
-      el.dataset.c    = c;
+      el.className  = 'cell';
+      el.dataset.r  = r;
+      el.dataset.c  = c;
       el.addEventListener('click', () => drop(c));
       boardEl.appendChild(el);
     }
@@ -434,24 +419,21 @@ function arrowHover(col, on) {
   if (on && !locked) btn.classList.add(cur === P1 ? 'hover-p1' : 'hover-p2');
 }
 
-// ── DROP ─────────────────────────────────────────────────────────────────────
 function drop(col) {
   if (locked) return;
-
   let row = -1;
   for (let r = R - 1; r >= 0; r--) {
     if (!grid[r][col]) { row = r; break; }
   }
-  if (row === -1) return; // colonna piena
+  if (row === -1) return;
 
   locked = true;
   grid[row][col] = cur;
 
-  const el      = cell(row, col);
-  const cellH   = el.getBoundingClientRect().height;
-  const gap     = 4;
-  const fallPx  = (row + 1.5) * (cellH + gap);
-  const fallMs  = Math.min(80 + row * 55, 380);
+  const el     = cell(row, col);
+  const cellH  = el.getBoundingClientRect().height;
+  const fallPx = (row + 1.5) * (cellH + 5);
+  const fallMs = Math.min(80 + row * 55, 380);
 
   el.classList.add(cur === P1 ? 'p1' : 'p2');
   el.style.setProperty('--fall-d', `${fallPx.toFixed(0)}px`);
@@ -477,26 +459,21 @@ function afterDrop(row, col) {
     }, 700);
     return;
   }
-  if (isDraw()) {
-    setTimeout(() => showDraw(), 400);
-    return;
-  }
+  if (isDraw()) { setTimeout(() => showDraw(), 400); return; }
   cur    = cur === P1 ? P2 : P1;
   locked = false;
   updateTurn();
 }
 
-// ── WIN CHECK ────────────────────────────────────────────────────────────────
 function checkWin(row, col) {
   const p    = grid[row][col];
   const dirs = [[0,1],[1,0],[1,1],[1,-1]];
   for (const [dr, dc] of dirs) {
     const cells = [[row, col]];
-    for (let s of [1, -1]) {
+    for (const s of [1, -1]) {
       let r = row + dr*s, c = col + dc*s;
       while (r >= 0 && r < R && c >= 0 && c < C && grid[r][c] === p) {
-        cells.push([r, c]);
-        r += dr*s; c += dc*s;
+        cells.push([r, c]); r += dr*s; c += dc*s;
       }
     }
     if (cells.length >= 4) return cells;
@@ -506,7 +483,6 @@ function checkWin(row, col) {
 
 function isDraw() { return grid[0].every(v => v !== 0); }
 
-// ── UI ───────────────────────────────────────────────────────────────────────
 function updateTurn() {
   document.getElementById('tDisc').className = `t-disc ${cur === P1 ? 'p1' : 'p2'}`;
   document.getElementById('tText').textContent = `TURNO DI ${NAME[cur]}`;
@@ -515,15 +491,14 @@ function updateTurn() {
 function updateScore() {
   document.getElementById('s1').textContent = scores[P1];
   document.getElementById('s2').textContent = scores[P2];
-  const pip = (n, filled, cls) =>
+  const pip = (filled, cls) =>
     Array.from({ length: WINS_NEEDED }, (_, i) =>
       `<div class="pip ${i < filled ? 'filled' : ''} ${cls}"></div>`
     ).join('');
-  document.getElementById('pips1').innerHTML = pip(WINS_NEEDED, scores[P1], 'p1-col');
-  document.getElementById('pips2').innerHTML = pip(WINS_NEEDED, scores[P2], 'p2-col');
+  document.getElementById('pips1').innerHTML = pip(scores[P1], 'p1-col');
+  document.getElementById('pips2').innerHTML = pip(scores[P2], 'p2-col');
 }
 
-// ── OVERLAY ──────────────────────────────────────────────────────────────────
 function showOverlay(icon, title, titleColor, sub, btnLabel, onClick) {
   document.getElementById('mIcon').textContent  = icon;
   document.getElementById('mTitle').textContent = title;
@@ -534,82 +509,59 @@ function showOverlay(icon, title, titleColor, sub, btnLabel, onClick) {
   document.getElementById('overlay').classList.add('show');
 }
 
-function hideOverlay() {
-  document.getElementById('overlay').classList.remove('show');
+function hideOverlay() { document.getElementById('overlay').classList.remove('show'); }
+
+function showGameEnd(w) {
+  const col = w === P1 ? 'var(--p1g)' : 'var(--p2)';
+  const ico = w === P1 ? '🔴' : '🟡';
+  showOverlay(ico, `${NAME[w]} VINCE!`, col,
+    `Partita ${scores[P1]+scores[P2]} di ${WINS_NEEDED*2-1}\nPunteggio: ${scores[P1]} — ${scores[P2]}`,
+    'PARTITA SUCCESSIVA ▶', () => { hideOverlay(); newGame(); });
 }
 
-function showGameEnd(winner) {
-  const col = winner === P1 ? 'var(--p1g)' : 'var(--p2)';
-  const ico = winner === P1 ? '🔴' : '🟡';
-  showOverlay(
-    ico,
-    `${NAME[winner]} VINCE!`,
-    col,
-    `Partita ${scores[P1] + scores[P2]} di ${WINS_NEEDED*2 - 1}\nPunteggio: ${scores[P1]} — ${scores[P2]}`,
-    'PARTITA SUCCESSIVA ▶',
-    () => { hideOverlay(); newGame(); }
-  );
-}
-
-function showMatchEnd(winner) {
-  const col = winner === P1 ? 'var(--p1g)' : 'var(--p2)';
-  showOverlay(
-    '🏆',
-    `${NAME[winner]} CAMPIONE!`,
-    col,
-    `Vince il match ${scores[winner]} — ${scores[winner === P1 ? P2 : P1]}\nBravo ${NAME[winner]}!`,
-    '▶ RIVINCITA',
-    () => { hideOverlay(); newMatch(); }
-  );
+function showMatchEnd(w) {
+  const col = w === P1 ? 'var(--p1g)' : 'var(--p2)';
+  showOverlay('🏆', `${NAME[w]} CAMPIONE!`, col,
+    `Vince il match ${scores[w]} — ${scores[w===P1?P2:P1]}\nBravo ${NAME[w]}!`,
+    '▶ RIVINCITA', () => { hideOverlay(); newMatch(); });
 }
 
 function showDraw() {
   showOverlay('🤝', 'PARI!', 'var(--gold)',
     'Nessuno vince questa partita.',
-    '▶ RIVINCITA',
-    () => { hideOverlay(); newGame(); }
-  );
+    '▶ RIVINCITA', () => { hideOverlay(); newGame(); });
 }
 
-// ── FIREWORKS ────────────────────────────────────────────────────────────────
 function fireworks(player) {
   const fw  = document.getElementById('fw');
   fw.innerHTML = '';
-  const palP1 = ['#cc1122','#ff4455','#ff8899','#ffdd00','#ff6600'];
-  const palP2 = ['#ffcc00','#ffe566','#ffaa00','#ffffff','#ffdd88'];
-  const pal   = player === P1 ? palP1 : palP2;
-  const cx    = window.innerWidth  / 2;
-  const cy    = window.innerHeight / 2;
+  const pal = player === P1
+    ? ['#cc1122','#ff4455','#ff8899','#ffdd00','#ff6600']
+    : ['#ffcc00','#ffe566','#ffaa00','#ffffff','#ffdd88'];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
 
   for (let burst = 0; burst < 4; burst++) {
-    const bx  = cx + (Math.random() - 0.5) * 240;
-    const by  = cy + (Math.random() - 0.5) * 180;
-    const n   = 14 + burst * 2;
-
-    for (let i = 0; i < n; i++) {
+    const bx = cx + (Math.random()-.5)*240;
+    const by = cy + (Math.random()-.5)*180;
+    for (let i = 0; i < 16; i++) {
       const s   = document.createElement('div');
       s.className = 'sp';
-      const ang  = (i / n) * Math.PI * 2 + Math.random() * 0.4;
-      const dist = 70 + Math.random() * 100;
-      const sz   = 5 + Math.random() * 9;
+      const ang  = (i/16)*Math.PI*2 + Math.random()*0.4;
+      const dist = 80 + Math.random()*110;
+      const sz   = 6 + Math.random()*10;
       const col  = pal[i % pal.length];
-      s.style.cssText = `
-        left:${bx}px; top:${by}px;
-        width:${sz}px; height:${sz}px;
-        background:${col};
-        box-shadow: 0 0 ${sz+2}px ${col};
+      s.style.cssText = `left:${bx}px;top:${by}px;width:${sz}px;height:${sz}px;
+        background:${col};box-shadow:0 0 ${sz+2}px ${col};
         --tx:${(Math.cos(ang)*dist).toFixed(0)}px;
         --ty:${(Math.sin(ang)*dist).toFixed(0)}px;
-        --d:${(0.5 + Math.random()*0.55).toFixed(2)}s;
-        --dl:${(burst * 0.18 + Math.random() * 0.08).toFixed(2)}s;
-      `;
+        --d:${(.5+Math.random()*.55).toFixed(2)}s;
+        --dl:${(burst*.18+Math.random()*.08).toFixed(2)}s;`;
       fw.appendChild(s);
     }
   }
   setTimeout(() => { fw.innerHTML = ''; }, 2200);
 }
 
-// ── GO ───────────────────────────────────────────────────────────────────────
 newMatch();
 </script>
 </body>
