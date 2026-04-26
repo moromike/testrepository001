@@ -244,6 +244,153 @@
       to   { filter: brightness(2.2); box-shadow: 0 0 26px white, 0 0 50px white; }
     }
 
+    /* ── SETUP SCREEN ───────────────────────────────────────────────── */
+    #setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 0.6rem;
+      overflow-y: auto;
+      padding: 1rem 0.5rem 2rem;
+    }
+
+    #setup .title { --bs: min(96vw, 76dvh); }
+
+    .setup-card {
+      width: min(96vw, 480px);
+      background: linear-gradient(160deg, #1c0e00, #0a0500);
+      border: 2px solid var(--dim);
+      border-radius: 12px;
+      padding: clamp(1rem, 3vw, 1.6rem);
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .setup-section { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .setup-label {
+      font-size: clamp(0.6rem, 2.5vw, 0.78rem);
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      font-weight: bold;
+    }
+
+    .tog-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .tog {
+      font-family: inherit;
+      font-weight: bold;
+      font-size: clamp(0.7rem, 2.8vw, 0.9rem);
+      letter-spacing: 0.08em;
+      padding: 0.5em 1em;
+      border: 2px solid var(--dim);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .tog.on {
+      border-color: var(--gold);
+      background: var(--gold);
+      color: #000;
+    }
+
+    .names-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .name-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .disc-prev {
+      width: clamp(18px, 4vw, 28px);
+      height: clamp(18px, 4vw, 28px);
+      border-radius: 50%;
+    }
+    .disc-prev.p1 { background: radial-gradient(circle at 35% 30%, var(--p1g), var(--p1)); box-shadow: 0 0 6px var(--p1); }
+    .disc-prev.p2 { background: radial-gradient(circle at 35% 30%, var(--p2g), var(--p2)); box-shadow: 0 0 6px var(--p2); }
+
+    .name-inp {
+      width: 100%;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: clamp(0.75rem, 3vw, 1rem);
+      letter-spacing: 0.1em;
+      text-align: center;
+      text-transform: uppercase;
+      padding: 0.45em 0.5em;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid var(--dim);
+      border-radius: 6px;
+      color: var(--gold);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .name-inp:focus { border-color: var(--gold); }
+
+    .vs-mini {
+      font-size: clamp(0.6rem, 2vw, 0.8rem);
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      flex-shrink: 0;
+    }
+
+    .timer-row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+
+    .timer-sec-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .timer-inp {
+      width: clamp(48px, 12vw, 64px);
+      font-family: inherit;
+      font-weight: bold;
+      font-size: clamp(0.85rem, 3vw, 1.1rem);
+      letter-spacing: 0.08em;
+      text-align: center;
+      padding: 0.4em;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid var(--gold);
+      border-radius: 6px;
+      color: var(--gold);
+      outline: none;
+    }
+
+    .timer-unit {
+      font-size: clamp(0.6rem, 2vw, 0.78rem);
+      color: var(--dim);
+      letter-spacing: 0.1em;
+    }
+
+    .start-btn {
+      font-family: inherit;
+      font-weight: bold;
+      font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+      letter-spacing: 0.15em;
+      padding: 0.8em 2em;
+      border: 2px solid var(--gold);
+      border-radius: 8px;
+      background: var(--gold);
+      color: #000;
+      cursor: pointer;
+      align-self: center;
+      transition: opacity 0.15s, transform 0.15s;
+      text-transform: uppercase;
+    }
+    .start-btn:active { transform: scale(0.96); opacity: 0.85; }
+
     /* ── OVERLAY ────────────────────────────────────────────────────── */
     #overlay {
       position: fixed; inset: 0;
@@ -318,6 +465,61 @@
 <body>
 
 <div id="fw"></div>
+
+<!-- ── SETUP SCREEN ──────────────────────────────────────────────────────── -->
+<div id="setup">
+  <div class="title">FORZA&nbsp;4</div>
+  <div class="setup-card">
+
+    <div class="setup-section">
+      <div class="setup-label">MODO DI GIOCO</div>
+      <div class="tog-group" id="modeGroup">
+        <button class="tog on" data-val="2p">👥 2 GIOCATORI</button>
+        <button class="tog"    data-val="1p">🤖 VS CPU</button>
+      </div>
+    </div>
+
+    <div class="setup-section" id="diffSection" style="display:none">
+      <div class="setup-label">DIFFICOLTÀ CPU</div>
+      <div class="tog-group" id="diffGroup">
+        <button class="tog"    data-val="basso">🟢 BASSO</button>
+        <button class="tog on" data-val="alto">🔴 ALTO</button>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-label">NOMI GIOCATORI</div>
+      <div class="names-row">
+        <div class="name-field">
+          <div class="disc-prev p1"></div>
+          <input class="name-inp" id="name1" value="MICHELE" maxlength="10">
+        </div>
+        <div class="vs-mini">VS</div>
+        <div class="name-field">
+          <div class="disc-prev p2"></div>
+          <input class="name-inp" id="name2" value="FEDERICO" maxlength="10">
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-label">TIMER PER MOSSA</div>
+      <div class="timer-row">
+        <div class="tog-group" id="timerGroup">
+          <button class="tog on" data-val="no">❌ NO</button>
+          <button class="tog"    data-val="si">✅ SÌ</button>
+        </div>
+        <div class="timer-sec-wrap" id="timerSecWrap" style="display:none">
+          <input class="timer-inp" id="timerSec" type="number" value="10" min="3" max="99">
+          <span class="timer-unit">SEC</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="start-btn" id="startBtn">▶ &nbsp;INIZIA!</button>
+  </div>
+</div>
+
 <div id="overlay">
   <div class="msg-box">
     <span class="msg-icon"  id="mIcon"></span>
@@ -327,7 +529,7 @@
   </div>
 </div>
 
-<div class="game">
+<div class="game" id="game" style="display:none">
   <div class="title">FORZA&nbsp;4</div>
   <div class="subtitle">MICHELE &nbsp;·&nbsp; VS &nbsp;·&nbsp; FEDERICO &nbsp;—&nbsp; AL MEGLIO DELLE 3</div>
 
