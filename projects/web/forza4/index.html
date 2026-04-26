@@ -714,6 +714,8 @@ function newGame() {
   buildDOM();
   updateTurn();
   updateScore();
+  // Se in modalità 1P e tocca all'AI per prima, triggerala
+  if (aiEnabled && cur === aiPlayer) triggerAiMove();
 }
 
 function buildDOM() {
@@ -757,7 +759,11 @@ function arrowHover(col, on) {
 }
 
 function drop(col) {
-  if (locked) return;
+  if (locked) return; // blocca click umano durante AI o animazione
+  dropAt(col);
+}
+
+function dropAt(col) {
   let row = -1;
   for (let r = R - 1; r >= 0; r--) {
     if (!grid[r][col]) { row = r; break; }
@@ -801,6 +807,16 @@ function afterDrop(row, col) {
   cur    = cur === P1 ? P2 : P1;
   locked = false;
   updateTurn();
+  if (aiEnabled && cur === aiPlayer) triggerAiMove();
+}
+
+function triggerAiMove() {
+  locked = true;
+  document.getElementById('tText').textContent = 'CPU STA PENSANDO...';
+  setTimeout(() => {
+    const col = getAiMove(aiPlayer, aiPlayer === P1 ? P2 : P1, difficulty);
+    dropAt(col);
+  }, 450);
 }
 
 function checkWin(row, col) {
