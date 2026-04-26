@@ -447,6 +447,8 @@
       transition: background 0.2s, color 0.2s;
     }
     .msg-btn:hover, .msg-btn:active { background: var(--gold); color: #000; }
+    .msg-btn-sec { background: transparent; color: var(--dim); border-color: var(--dim); font-size: clamp(0.65rem, 2.2vw, 0.85rem); }
+    .msg-btn-sec:hover, .msg-btn-sec:active { background: var(--dim); color: #000; }
 
     /* ── FIREWORKS ──────────────────────────────────────────────────── */
     #fw { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 190; }
@@ -525,7 +527,10 @@
     <span class="msg-icon"  id="mIcon"></span>
     <div  class="msg-title" id="mTitle"></div>
     <div  class="msg-sub"   id="mSub"></div>
-    <button class="msg-btn" id="mBtn"></button>
+    <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
+      <button class="msg-btn" id="mBtn"></button>
+      <button class="msg-btn msg-btn-sec" id="mBtnSetup" onclick="hideOverlay();backToSetup()">⚙ IMPOSTAZIONI</button>
+    </div>
   </div>
 </div>
 
@@ -560,10 +565,78 @@
 
 <script>
 const R = 6, C = 7, P1 = 1, P2 = 2;
-const NAME = { [P1]: 'MICHELE', [P2]: 'FEDERICO' };
 const WINS_NEEDED = 2;
 
+// ── CONFIG (set by setup screen) ─────────────────────────────────────────────
+let NAME         = { [P1]: 'MICHELE', [P2]: 'FEDERICO' };
+let aiEnabled    = false;   // true in 1P mode
+let aiPlayer     = P2;      // AI is always P2
+let difficulty   = 'alto';  // 'alto' | 'basso'
+let timerEnabled = false;
+let timerDuration = 10;
+
+// ── GAME STATE ───────────────────────────────────────────────────────────────
 let grid, cur, locked, scores, gameNum;
+
+// ── SETUP LOGIC ──────────────────────────────────────────────────────────────
+function initSetup() {
+  // Toggle groups
+  bindToggleGroup('modeGroup', val => {
+    const is1p = val === '1p';
+    document.getElementById('diffSection').style.display = is1p ? '' : 'none';
+    document.getElementById('name2').value = is1p ? 'CPU' : 'FEDERICO';
+    document.getElementById('name2').disabled = is1p;
+  });
+
+  bindToggleGroup('diffGroup');
+
+  bindToggleGroup('timerGroup', val => {
+    document.getElementById('timerSecWrap').style.display = val === 'si' ? '' : 'none';
+  });
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+}
+
+function bindToggleGroup(groupId, onChange) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.tog').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.tog').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      if (onChange) onChange(btn.dataset.val);
+    });
+  });
+}
+
+function getTogVal(groupId) {
+  const on = document.querySelector(`#${groupId} .tog.on`);
+  return on ? on.dataset.val : null;
+}
+
+function startGame() {
+  const mode = getTogVal('modeGroup');
+  aiEnabled   = mode === '1p';
+  difficulty  = getTogVal('diffGroup') || 'alto';
+  timerEnabled = getTogVal('timerGroup') === 'si';
+  timerDuration = Math.max(3, parseInt(document.getElementById('timerSec').value) || 10);
+
+  const n1 = document.getElementById('name1').value.trim().toUpperCase() || 'GIOCATORE 1';
+  const n2 = aiEnabled ? 'CPU' : (document.getElementById('name2').value.trim().toUpperCase() || 'GIOCATORE 2');
+  NAME = { [P1]: n1, [P2]: n2 };
+
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('game').style.display  = '';
+
+  newMatch();
+}
+
+function backToSetup() {
+  document.getElementById('game').style.display  = 'none';
+  document.getElementById('setup').style.display = '';
+}
+
+// Init setup on load
+initSetup();
 
 function newMatch() {
   scores  = { [P1]: 0, [P2]: 0 };
@@ -764,7 +837,7 @@ function fireworks(player) {
   setTimeout(() => { fw.innerHTML = ''; }, 2200);
 }
 
-newMatch();
+// newMatch() is now called by startGame() after setup
 </script>
 </body>
 </html>
