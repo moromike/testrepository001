@@ -32,9 +32,10 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: clamp(0.4rem, 1.5vw, 1.2rem);
+      padding: clamp(0.3rem, 1vw, 0.8rem) clamp(0.3rem, 1vw, 0.8rem) clamp(0.5rem, 1.5vh, 1rem);
       user-select: none;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       background-image:
         repeating-linear-gradient(
           0deg,
@@ -52,8 +53,8 @@
       /* board size drives everything — board is square-ish 7:6,
          so board-size = min(96vw, 76dvh).
          We expose it as a CSS var for child elements too. */
-      --bs: min(96vw, 76dvh);
-      gap: clamp(0.3rem, 1vh, 0.8rem);
+      --bs: min(96vw, 54dvh);
+      gap: clamp(0.2rem, 0.6vh, 0.5rem);
     }
 
     /* ── TITLE ──────────────────────────────────────────────────────── */
@@ -585,17 +586,17 @@
 
 <div class="game" id="game" style="display:none">
   <div class="title">FORZA&nbsp;4</div>
-  <div class="subtitle">MICHELE &nbsp;·&nbsp; VS &nbsp;·&nbsp; FEDERICO &nbsp;—&nbsp; AL MEGLIO DELLE 3</div>
+  <div class="subtitle" id="gameSubtitle">— AL MEGLIO DELLE 3 —</div>
 
   <div class="scoreboard">
     <div class="player-block">
-      <div class="p-name p1-col">MICHELE</div>
+      <div class="p-name p1-col" id="pName1">MICHELE</div>
       <div class="p-score p1-col" id="s1">0</div>
       <div class="p-pips p1-col" id="pips1"></div>
     </div>
     <div class="vs">VS</div>
     <div class="player-block">
-      <div class="p-name p2-col">FEDERICO</div>
+      <div class="p-name p2-col" id="pName2">FEDERICO</div>
       <div class="p-score p2-col" id="s2">0</div>
       <div class="p-pips p2-col" id="pips2"></div>
     </div>
@@ -684,8 +685,11 @@ function startGame() {
   const n2 = aiEnabled ? 'CPU' : (document.getElementById('name2').value.trim().toUpperCase() || 'GIOCATORE 2');
   NAME = { [P1]: n1, [P2]: n2 };
 
-  document.getElementById('setup').style.display = 'none';
-  document.getElementById('game').style.display  = '';
+  document.getElementById('setup').style.display    = 'none';
+  document.getElementById('game').style.display     = '';
+  document.getElementById('gameSubtitle').textContent = `${NAME[P1]}  ·  VS  ·  ${NAME[P2]}  —  AL MEGLIO DELLE 3`;
+  document.getElementById('pName1').textContent     = NAME[P1];
+  document.getElementById('pName2').textContent     = NAME[P2];
 
   newMatch();
 }
