@@ -691,8 +691,10 @@ function startGame() {
 }
 
 function backToSetup() {
-  document.getElementById('game').style.display  = 'none';
-  document.getElementById('setup').style.display = '';
+  clearTimer();
+  document.getElementById('timerWrap').style.display = 'none';
+  document.getElementById('game').style.display      = 'none';
+  document.getElementById('setup').style.display     = '';
 }
 
 // Init setup on load
@@ -782,6 +784,7 @@ function drop(col) {
 }
 
 function afterDrop(row, col) {
+  clearTimer();
   const wins = checkWin(row, col);
   if (wins) {
     wins.forEach(([r, c]) => cell(r, c).classList.add('winner'));
@@ -821,6 +824,54 @@ function isDraw() { return grid[0].every(v => v !== 0); }
 function updateTurn() {
   document.getElementById('tDisc').className = `t-disc ${cur === P1 ? 'p1' : 'p2'}`;
   document.getElementById('tText').textContent = `TURNO DI ${NAME[cur]}`;
+  // Non far partire il timer per il turno AI
+  if (timerEnabled && !(aiEnabled && cur === aiPlayer)) {
+    startTimer();
+  }
+}
+
+// ── TIMER LOGIC ──────────────────────────────────────────────────────────────
+let timerInterval = null;
+let timerLeft     = 0;
+
+function startTimer() {
+  clearTimer();
+  timerLeft = timerDuration;
+  document.getElementById('timerWrap').style.display = '';
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timerLeft--;
+    updateTimerUI();
+    if (timerLeft <= 0) {
+      clearTimer();
+      randomDrop();
+    }
+  }, 1000);
+}
+
+function clearTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerLeft = 0;
+  if (timerEnabled) updateTimerUI();
+}
+
+function updateTimerUI() {
+  const bar = document.getElementById('timerBar');
+  const num = document.getElementById('timerNum');
+  if (!bar || !num) return;
+  const pct     = timerDuration > 0 ? (timerLeft / timerDuration) * 100 : 0;
+  const urgent  = timerLeft <= 3 && timerLeft > 0;
+  bar.style.width = `${pct}%`;
+  bar.className   = 'timer-bar' + (urgent ? ' urgent' : '');
+  num.textContent = timerLeft > 0 ? timerLeft : '';
+  num.className   = 'timer-num' + (urgent ? ' urgent' : '');
+}
+
+function randomDrop() {
+  const valid = [];
+  for (let c = 0; c < C; c++) { if (!grid[0][c]) valid.push(c); }
+  if (!valid.length) return;
+  drop(valid[Math.floor(Math.random() * valid.length)]);
 }
 
 function updateScore() {
