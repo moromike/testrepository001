@@ -57,6 +57,30 @@
       gap: clamp(0.15rem, 0.45dvh, 0.4rem);
     }
 
+    /* ── TITLE ROW ──────────────────────────────────────────────────── */
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6em;
+      width: 100%;
+    }
+
+    .reset-btn {
+      font-family: inherit;
+      font-size: clamp(0.7rem, calc(var(--bs) * 0.028), 1.2rem);
+      background: none;
+      border: 1.5px solid var(--dim);
+      border-radius: 6px;
+      color: var(--dim);
+      cursor: pointer;
+      padding: 0.2em 0.45em;
+      line-height: 1;
+      transition: color 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .reset-btn:active { color: var(--gold); border-color: var(--gold); }
+
     /* ── TITLE ──────────────────────────────────────────────────────── */
     .title {
       font-size: clamp(1.5rem, calc(var(--bs) * 0.09), 5rem);
@@ -585,7 +609,10 @@
 </div>
 
 <div class="game" id="game" style="display:none">
-  <div class="title">FORZA&nbsp;4</div>
+  <div class="title-row">
+    <div class="title">FORZA&nbsp;4</div>
+    <button class="reset-btn" onclick="clearTimer();backToSetup()" title="Torna alle impostazioni">⚙</button>
+  </div>
   <div class="subtitle" id="gameSubtitle">— AL MEGLIO DELLE 3 —</div>
 
   <div class="scoreboard">
