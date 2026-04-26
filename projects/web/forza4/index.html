@@ -450,6 +450,55 @@
     .msg-btn-sec { background: transparent; color: var(--dim); border-color: var(--dim); font-size: clamp(0.65rem, 2.2vw, 0.85rem); }
     .msg-btn-sec:hover, .msg-btn-sec:active { background: var(--dim); color: #000; }
 
+    /* ── TIMER ──────────────────────────────────────────────────────── */
+    .timer-wrap {
+      width: var(--bs);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .timer-top {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+    }
+
+    .timer-label {
+      font-size: clamp(0.5rem, calc(var(--bs) * 0.02), 0.9rem);
+      letter-spacing: 0.12em;
+      color: var(--dim);
+    }
+
+    .timer-num {
+      font-size: clamp(1rem, calc(var(--bs) * 0.06), 2.8rem);
+      font-weight: bold;
+      line-height: 1;
+      min-width: 2ch;
+      text-align: right;
+      transition: color 0.3s;
+    }
+
+    .timer-track {
+      width: 100%;
+      height: clamp(6px, 1.2vw, 12px);
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      height: 100%;
+      width: 100%;
+      background: var(--gold);
+      border-radius: 99px;
+      transform-origin: left center;
+      transition: width 1s linear, background 0.3s;
+    }
+
+    .timer-bar.urgent  { background: var(--p1g); }
+    .timer-num.urgent  { color: var(--p1g); }
+
     /* ── FIREWORKS ──────────────────────────────────────────────────── */
     #fw { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 190; }
 
@@ -555,6 +604,17 @@
   <div class="turn-bar">
     <div class="t-disc p1" id="tDisc"></div>
     <span id="tText">TURNO DI MICHELE</span>
+  </div>
+
+  <div class="timer-wrap" id="timerWrap" style="display:none">
+    <div class="timer-top">
+      <span class="timer-label">TEMPO</span>
+      <span class="timer-num" id="timerNum">10</span>
+      <span class="timer-label">SEC</span>
+    </div>
+    <div class="timer-track">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
   </div>
 
   <div class="board-wrap">
