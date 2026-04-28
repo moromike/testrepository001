@@ -718,6 +718,7 @@ function startGame() {
   document.getElementById('pName1').textContent     = NAME[P1];
   document.getElementById('pName2').textContent     = NAME[P2];
 
+  getAC(); // inizializza AudioContext su gesto utente
   newMatch();
 }
 
@@ -816,6 +817,7 @@ function dropAt(col) {
 
   el.addEventListener('animationend', () => {
     el.classList.remove('dropping');
+    soundDrop();
     afterDrop(row, col);
   }, { once: true });
 }
@@ -829,12 +831,12 @@ function afterDrop(row, col) {
     updateScore();
     fireworks(cur);
     setTimeout(() => {
-      if (scores[cur] >= WINS_NEEDED) showMatchEnd(cur);
-      else showGameEnd(cur);
+      if (scores[cur] >= WINS_NEEDED) { soundMatchWin(); showMatchEnd(cur); }
+      else { soundWin(); showGameEnd(cur); }
     }, 700);
     return;
   }
-  if (isDraw()) { setTimeout(() => showDraw(), 400); return; }
+  if (isDraw()) { setTimeout(() => { soundDraw(); showDraw(); }, 400); return; }
   cur    = cur === P1 ? P2 : P1;
   locked = false;
   updateTurn();
@@ -889,10 +891,8 @@ function startTimer() {
   timerInterval = setInterval(() => {
     timerLeft--;
     updateTimerUI();
-    if (timerLeft <= 0) {
-      clearTimer();
-      randomDrop();
-    }
+    if (timerLeft > 0 && timerLeft <= 3) soundTick();
+    if (timerLeft <= 0) { clearTimer(); randomDrop(); }
   }, 1000);
 }
 
@@ -1130,7 +1130,51 @@ function fireworks(player) {
   setTimeout(() => { fw.innerHTML = ''; }, 2200);
 }
 
-// newMatch() is now called by startGame() after setup
+// ── AUDIO ────────────────────────────────────────────────────────────────────
+let _ac = null;
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (_ac.state === 'suspended') _ac.resume();
+  return _ac;
+}
+
+function beep(freq, type, vol, dur, t0 = 0, f1 = null) {
+  const ctx = getAC(), now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gn  = ctx.createGain();
+  osc.connect(gn); gn.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now + t0);
+  if (f1) osc.frequency.exponentialRampToValueAtTime(f1, now + t0 + dur * 0.9);
+  gn.gain.setValueAtTime(vol, now + t0);
+  gn.gain.exponentialRampToValueAtTime(0.001, now + t0 + dur);
+  osc.start(now + t0); osc.stop(now + t0 + dur + 0.02);
+}
+
+function soundDrop() {
+  beep(400, 'sine',     0.26, 0.09);
+  beep(190, 'triangle', 0.16, 0.13);
+}
+
+function soundWin() {
+  [[659,0],[784,0.10],[1047,0.20]].forEach(([f,t]) => beep(f,'sine',0.30,0.16,t));
+  beep(1047,'sine',0.20,0.55,0.36);
+}
+
+function soundMatchWin() {
+  [[523,0],[659,0.09],[784,0.18],[1047,0.27],[784,0.36],[1047,0.45],[1319,0.54]]
+    .forEach(([f,t]) => beep(f,'sine',0.26,0.14,t));
+  [1047,1319,1568].forEach(f => beep(f,'sine',0.18,0.85,0.72));
+}
+
+function soundDraw() {
+  beep(440,'sine',0.20,0.18);
+  beep(330,'sine',0.20,0.28,0.16);
+}
+
+function soundTick() {
+  beep(880,'sine',0.13,0.05);
+}
 </script>
 </body>
 </html>
