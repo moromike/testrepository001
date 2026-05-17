@@ -365,7 +365,7 @@ function backToSetup() {
 // ═══════════════════════════════════════════════
 // RECORDS
 // ═══════════════════════════════════════════════
-function recKey(n) { return `g15_rec_${n}`; }
+function recKey(n) { return `g15_rec2_${n}`; }
 
 function loadRecords(n) {
   try { return JSON.parse(localStorage.getItem(recKey(n))) || {time:[],moves:[]}; }
@@ -541,8 +541,8 @@ function handleTileClick(idx) {
   document.getElementById('moves-disp').textContent = moveCount;
   renderBoard(); soundMove();
   if (isSolved(board)) {
-    stopTimer();
     const elapsed = getElapsedMs();
+    stopTimer();
     const preRec = loadRecords(curN);
     if (inTop3Time(preRec, elapsed) || inTop3Moves(preRec, moveCount)) {
       setTimeout(()=>showNameEntry(elapsed, moveCount), 200);
@@ -636,8 +636,8 @@ function doStep() {
 function finishSolve() {
   solving = false;
   setSolvingUI(false);
-  stopTimer();
   const elapsed = getElapsedMs();
+  stopTimer();
   setStatus('Risolto!');
   setTimeout(()=>showWin(elapsed, moveCount, null, true), 300);
 }
