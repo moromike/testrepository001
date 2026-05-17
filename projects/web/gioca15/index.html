@@ -197,6 +197,15 @@
     .ov-stats { font-size: clamp(0.7rem,3vw,1rem); color: var(--dim); letter-spacing: 0.12em; text-align: center; line-height: 1.8; }
     .ov-record { font-size: clamp(0.7rem,3vw,1rem); color: #ffaa00; letter-spacing: 0.12em; text-align: center; }
     .ov-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .name-entry-label { font-size: clamp(0.55rem,2.2vw,0.82rem); letter-spacing: 0.18em; color: var(--dim); text-align: center; }
+    .name-input {
+      font-family: inherit; font-size: clamp(1.8rem,9vw,3rem); font-weight: 900;
+      letter-spacing: 0.5em; text-align: center; text-transform: uppercase;
+      background: #1a0c00; color: var(--gold);
+      border: 2.5px solid var(--gold); border-radius: 8px;
+      width: 4.2em; padding: 0.15em 0.2em; outline: none; caret-color: var(--gold);
+    }
+    .rec-name { color: #ffcc88; font-weight: 900; min-width: 2.4em; letter-spacing: 0.05em; font-size: 0.95em; }
     .ov-btn {
       font-family: inherit; font-weight: bold; letter-spacing: 0.15em;
       font-size: clamp(0.8rem,3.5vw,1.2rem);
@@ -261,6 +270,22 @@
   </div>
 </div>
 
+<!-- ══ NAME ENTRY OVERLAY ══ -->
+<div class="overlay" id="name-overlay">
+  <div class="ov-icon">🏆</div>
+  <div class="ov-title">RECORD!</div>
+  <div class="ov-stats" id="name-stats"></div>
+  <div class="name-entry-label">INSERISCI LE TUE INIZIALI (MAX 3)</div>
+  <input id="name-input" class="name-input" type="text" maxlength="3"
+         autocomplete="off" autocorrect="off" autocapitalize="characters"
+         spellcheck="false" placeholder="AAA"
+         oninput="this.value=this.value.toUpperCase()"
+         onkeydown="if(event.key==='Enter')confirmName()">
+  <div class="ov-btns">
+    <button class="ov-btn" onclick="confirmName()">✓ OK</button>
+  </div>
+</div>
+
 <!-- ══ WIN OVERLAY ══ -->
 <div class="overlay" id="overlay">
   <div class="ov-icon" id="ov-icon">🏆</div>
@@ -296,6 +321,7 @@ const OPP= [ 1, 0, 3, 2]; // opposite direction index
 // ═══════════════════════════════════════════════
 let curN = 4, curSizeIdx = 0;
 let board = [], moveCount = 0;
+let pendingElapsed = 0, pendingMoves = 0;
 let timerStart = 0, timerInterval = null, timerOffset = 0;
 let solving = false, solvePaused = false;
 let solveQueue = [], solveStepIdx = 0, solveTimer = null;
@@ -346,12 +372,16 @@ function loadRecords(n) {
   catch(e) { return {time:[],moves:[]}; }
 }
 
-function saveRecord(n, timeMs, moves) {
+function inTop3Time(rec, v)  { return rec.time.length  < 3 || v <= rec.time[rec.time.length-1].v;  }
+function inTop3Moves(rec, v) { return rec.moves.length < 3 || v <= rec.moves[rec.moves.length-1].v; }
+
+function saveRecord(n, timeMs, moves, name) {
+  const nm = name ? name.toUpperCase().slice(0,3).padEnd(3,'·') : '---';
   const rec = loadRecords(n);
-  rec.time.push({v:timeMs, m:moves}); rec.time.sort((a,b)=>a.v-b.v); rec.time=rec.time.slice(0,3);
-  rec.moves.push({v:moves, t:timeMs}); rec.moves.sort((a,b)=>a.v-b.v); rec.moves=rec.moves.slice(0,3);
-  const isTimeRec = rec.time[0] && rec.time[0].v===timeMs && rec.time[0].m===moves;
-  const isMoveRec = rec.moves[0] && rec.moves[0].v===moves && rec.moves[0].t===timeMs;
+  const isTimeRec  = inTop3Time(rec, timeMs);
+  const isMoveRec  = inTop3Moves(rec, moves);
+  if (isTimeRec)  { rec.time.push({v:timeMs, m:moves, n:nm});  rec.time.sort((a,b)=>a.v-b.v);  rec.time=rec.time.slice(0,3);  }
+  if (isMoveRec)  { rec.moves.push({v:moves, t:timeMs, n:nm}); rec.moves.sort((a,b)=>a.v-b.v); rec.moves=rec.moves.slice(0,3); }
   localStorage.setItem(recKey(n), JSON.stringify(rec));
   return {isTimeRec, isMoveRec};
 }
@@ -372,13 +402,13 @@ function renderRecords() {
   if (!rec.time.length) tEl.innerHTML = '<div class="rec-empty">— nessun record —</div>';
   else rec.time.forEach((r,i) => {
     const d = document.createElement('div'); d.className = 'rec-row';
-    d.innerHTML = `<span class="rec-rank">${medals[i]}</span><span class="rec-val">${fmtTime(r.v)}</span><span style="color:var(--dim);font-size:.85em">${r.m}m</span>`;
+    d.innerHTML = `<span class="rec-rank">${medals[i]}</span><span class="rec-name">${r.n||'---'}</span><span class="rec-val">${fmtTime(r.v)}</span><span style="color:var(--dim);font-size:.85em">${r.m}m</span>`;
     tEl.appendChild(d);
   });
   if (!rec.moves.length) mEl.innerHTML = '<div class="rec-empty">— nessun record —</div>';
   else rec.moves.forEach((r,i) => {
     const d = document.createElement('div'); d.className = 'rec-row';
-    d.innerHTML = `<span class="rec-rank">${medals[i]}</span><span class="rec-val">${r.v} mos.</span><span style="color:var(--dim);font-size:.85em">${fmtTime(r.t)}</span>`;
+    d.innerHTML = `<span class="rec-rank">${medals[i]}</span><span class="rec-name">${r.n||'---'}</span><span class="rec-val">${r.v} mos.</span><span style="color:var(--dim);font-size:.85em">${fmtTime(r.t)}</span>`;
     mEl.appendChild(d);
   });
 }
@@ -513,9 +543,34 @@ function handleTileClick(idx) {
   if (isSolved(board)) {
     stopTimer();
     const elapsed = getElapsedMs();
-    const rec = saveRecord(curN, elapsed, moveCount);
-    setTimeout(()=>showWin(elapsed, moveCount, rec, false), 200);
+    const preRec = loadRecords(curN);
+    if (inTop3Time(preRec, elapsed) || inTop3Moves(preRec, moveCount)) {
+      setTimeout(()=>showNameEntry(elapsed, moveCount), 200);
+    } else {
+      const rec = saveRecord(curN, elapsed, moveCount, null);
+      setTimeout(()=>showWin(elapsed, moveCount, rec, false), 200);
+    }
   }
+}
+
+// ═══════════════════════════════════════════════
+// NAME ENTRY
+// ═══════════════════════════════════════════════
+function showNameEntry(elapsed, moves) {
+  pendingElapsed = elapsed; pendingMoves = moves;
+  document.getElementById('name-stats').innerHTML = `Tempo: ${fmtTime(elapsed)}&nbsp;&nbsp;Mosse: ${moves}`;
+  const inp = document.getElementById('name-input');
+  inp.value = '';
+  document.getElementById('name-overlay').classList.add('show');
+  setTimeout(()=>inp.focus(), 80);
+}
+
+function confirmName() {
+  const name = document.getElementById('name-input').value.trim() || '---';
+  document.getElementById('name-overlay').classList.remove('show');
+  const rec = saveRecord(curN, pendingElapsed, pendingMoves, name);
+  renderRecords();
+  setTimeout(()=>showWin(pendingElapsed, pendingMoves, rec, false), 80);
 }
 
 // ═══════════════════════════════════════════════
