@@ -34,8 +34,13 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .hud-score{color:var(--gold);font-size:1.6rem;font-weight:900;letter-spacing:.1em}
 .hud-label{color:#886600;font-size:.65rem;letter-spacing:.15em}
 .hud-speed{color:#cc9900;font-size:1.4rem}
-#canvas{display:block;touch-action:none;width:min(88vw,calc(100dvh - 100px));height:min(88vw,calc(100dvh - 100px))}
+#canvas{display:block;touch-action:none;width:min(88vw,calc(100dvh - 210px));height:min(88vw,calc(100dvh - 210px))}
 .hint{color:#3a2800;font-size:.6rem;letter-spacing:.15em}
+.controls{display:flex;justify-content:space-around;align-items:center;width:92%;padding:6px 0}
+.dpad-vert{display:flex;flex-direction:column;gap:7px}
+.dpad-horiz{display:flex;gap:7px}
+.dpad-btn{width:52px;height:52px;background:rgba(90,58,0,.35);border:1.5px solid rgba(255,204,0,.35);color:rgba(255,204,0,.7);font-size:1.3rem;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.dpad-btn:active{background:rgba(90,58,0,.7);border-color:var(--gold);color:var(--gold)}
 
 /* GAMEOVER */
 #gameover{justify-content:center;gap:20px;padding:20px}
@@ -100,7 +105,16 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
     <div class="hud-speed" id="hudSpeed"></div>
   </div>
   <canvas id="canvas"></canvas>
-  <div class="hint">SWIPE NELLA DIREZIONE DELLA FRECCIA</div>
+  <div class="controls">
+    <div class="dpad-vert">
+      <button class="dpad-btn" onclick="tapDir('UP')">▲</button>
+      <button class="dpad-btn" onclick="tapDir('DOWN')">▼</button>
+    </div>
+    <div class="dpad-horiz">
+      <button class="dpad-btn" onclick="tapDir('LEFT')">◀</button>
+      <button class="dpad-btn" onclick="tapDir('RIGHT')">▶</button>
+    </div>
+  </div>
 </div>
 
 <div id="gameover" class="screen">
@@ -345,6 +359,10 @@ document.addEventListener('keydown',e=>{
 });
 function processSwipe(dx,dy){
   const d=Math.abs(dx)>Math.abs(dy)?(dx>0?'RIGHT':'LEFT'):(dy>0?'DOWN':'UP');
+  if(d===curDir)handleCorrect(); else handleWrong();
+}
+function tapDir(d){
+  if(!accepting)return;
   if(d===curDir)handleCorrect(); else handleWrong();
 }
 
