@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Simon</title>
+  <style>
+    :root { --gold:#ffcc00; --dim:#8a6a00; --bg:#0e0800; }
+    * { box-sizing:border-box; margin:0; padding:0; touch-action:manipulation; }
+    body {
+      background:var(--bg); color:var(--gold);
+      font-family:'Courier New',Courier,monospace;
+      min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+      overflow-x:hidden;
+      background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px);
+    }
+    h1 { font-size:clamp(2rem,10vw,4rem); font-weight:bold; letter-spacing:0.28em; text-shadow:0 0 20px rgba(255,204,0,0.8),0 0 40px rgba(255,204,0,0.4); margin:clamp(0.4rem,2vw,1rem) 0 0.1em; }
+    .subtitle { font-size:clamp(0.6rem,3vw,1rem); letter-spacing:0.12em; color:var(--dim); margin-bottom:clamp(0.5rem,2vw,1rem); }
+    .screen { display:none; width:100%; flex-direction:column; align-items:center; }
+    .screen.active { display:flex; }
+
+    /* ── SETUP ── */
+    .mode-grid { display:flex; gap:0.5rem; justify-content:center; width:min(90vw,420px); margin-bottom:0.8rem; }
+    .mode-btn {
+      flex:1; font-family:inherit; font-weight:bold;
+      background:#1a0e00; border:2px solid var(--dim); border-radius:8px;
+      color:var(--dim); cursor:pointer; padding:0.5em 0.3em;
+      font-size:clamp(0.75rem,3.2vw,1.05rem); letter-spacing:0.06em; line-height:1.3;
+    }
+    .mode-btn small { display:block; font-size:0.75em; }
+    .mode-btn.sel { color:var(--gold); border-color:var(--gold); background:#2a1800; }
+    .mode-btn.sel small { color:var(--dim); }
+
+    .records-box { width:min(90vw,420px); border:1px solid #3a2200; border-radius:8px; padding:0.6em 0.8em; margin-bottom:0.8rem; }
+    .rec-title    { font-size:clamp(0.55rem,2.2vw,0.8rem); letter-spacing:0.18em; color:var(--dim); text-align:center; border-bottom:1px solid #3a2200; padding-bottom:0.3em; margin-bottom:0.4em; }
+    .rec-cols     { display:flex; gap:1rem; }
+    .rec-col      { flex:1; }
+    .rec-col-title{ font-size:clamp(0.5rem,2vw,0.7rem); color:var(--dim); letter-spacing:0.12em; margin-bottom:0.2em; text-align:center; }
+    .rec-row      { display:flex; align-items:center; gap:0.4em; font-size:clamp(0.5rem,2vw,0.72rem); padding:0.15em 0; border-bottom:1px solid rgba(90,58,0,0.3); }
+    .rec-rank     { color:var(--dim); min-width:1.5em; }
+    .rec-name     { color:#ffcc88; font-weight:900; min-width:2.4em; font-size:0.95em; }
+    .rec-val      { color:var(--gold); font-weight:bold; }
+    .rec-empty    { color:#4a3200; font-size:0.85em; text-align:center; padding:0.3em 0; }
+    .start-btn {
+      font-family:inherit; font-weight:bold; letter-spacing:0.2em; font-size:clamp(1rem,5vw,1.6rem);
+      background:#1a0800; border:2px solid var(--gold); border-radius:10px;
+      color:var(--gold); cursor:pointer; padding:0.5em 2em;
+      box-shadow:0 0 15px rgba(255,204,0,0.3); width:min(90vw,420px);
+    }
+
+    /* ── GAME ── */
+    #game-screen { height:100dvh; overflow:hidden; justify-content:space-between; padding:0.4em 0.4em 0.5em; }
+    .game-title { font-size:clamp(1rem,4.5vw,1.8rem); font-weight:bold; letter-spacing:0.28em; text-shadow:0 0 12px rgba(255,204,0,0.6); flex-shrink:0; }
+    .hud { display:flex; justify-content:center; gap:2.5em; align-items:center; flex-shrink:0; }
+    .hud-item  { display:flex; flex-direction:column; align-items:center; }
+    .hud-label { font-size:clamp(0.4rem,1.6vw,0.6rem); letter-spacing:0.15em; color:var(--dim); }
+    .hud-val   { font-size:clamp(0.9rem,3.5vw,1.3rem); font-weight:bold; }
+    #canvas-wrap {
+      width:min(88vw, calc(100dvh - 175px));
+      aspect-ratio:1; flex-shrink:0;
+    }
+    #gameCanvas { display:block; width:100%; height:100%; touch-action:none; cursor:pointer; }
+    .status-text {
+      font-size:clamp(0.65rem,2.8vw,0.95rem); letter-spacing:0.18em;
+      color:var(--dim); text-align:center; flex-shrink:0; min-height:1.4em;
+      transition:color 0.2s;
+    }
+    .status-text.hi { color:var(--gold); }
+    .ctrl-row { display:flex; gap:0.5rem; flex-shrink:0; }
+    .ctrl-btn {
+      font-family:inherit; font-weight:bold; letter-spacing:0.07em;
+      font-size:clamp(0.55rem,2.2vw,0.8rem);
+      background:#1a0e00; border:1.5px solid var(--dim); border-radius:8px;
+      color:var(--dim); cursor:pointer; padding:0.35em 0.8em;
+    }
+    .ctrl-btn:active { color:var(--gold); border-color:var(--gold); background:#2a1400; }
+
+    /* ── OVERLAYS ── */
+    .overlay { display:none; position:fixed; inset:0; z-index:100; background:rgba(14,8,0,0.93); flex-direction:column; align-items:center; justify-content:center; gap:1rem; }
+    .overlay.show { display:flex; }
+    .ov-icon  { font-size:clamp(2.5rem,15vw,5rem); text-align:center; }
+    .ov-title { font-size:clamp(1.5rem,8vw,3rem); font-weight:bold; letter-spacing:0.2em; color:var(--gold); text-shadow:0 0 20px rgba(255,204,0,0.6); text-align:center; }
+    .ov-stats  { font-size:clamp(0.7rem,3vw,1rem); color:var(--dim); letter-spacing:0.12em; text-align:center; line-height:1.8; }
+    .ov-record { font-size:clamp(0.7rem,3vw,1rem); color:#ffaa00; letter-spacing:0.12em; text-align:center; }
+    .ov-btns  { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
+    .ov-btn {
+      font-family:inherit; font-weight:bold; letter-spacing:0.15em; font-size:clamp(0.8rem,3.5vw,1.2rem);
+      background:#1a0800; border:2px solid var(--gold); border-radius:10px;
+      color:var(--gold); cursor:pointer; padding:0.5em 1.5em;
+      box-shadow:0 0 10px rgba(255,204,0,0.3);
+    }
+    .name-entry-label { font-size:clamp(0.55rem,2.2vw,0.82rem); letter-spacing:0.18em; color:var(--dim); text-align:center; }
+    .name-input {
+      font-family:inherit; font-size:clamp(1.8rem,9vw,3rem); font-weight:900;
+      letter-spacing:0.5em; text-align:center; text-transform:uppercase;
+      background:#1a0c00; color:var(--gold); border:2.5px solid var(--gold);
+      border-radius:8px; width:4.2em; padding:0.15em 0.2em; outline:none; caret-color:var(--gold);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ SETUP ══ -->
+<div id="setup-screen" class="screen active">
+  <h1>SIMON</h1>
+  <div class="subtitle">IL GIOCO DELLE SEQUENZE</div>
+  <div class="mode-grid">
+    <button class="mode-btn" id="mode-3" onclick="selMode(3)">3<small>COLORI</small></button>
+    <button class="mode-btn" id="mode-4" onclick="selMode(4)">4<small>COLORI</small></button>
+    <button class="mode-btn" id="mode-6" onclick="selMode(6)">6<small>COLORI</small></button>
+    <button class="mode-btn" id="mode-8" onclick="selMode(8)">8<small>COLORI</small></button>
+  </div>
+  <div class="records-box">
+    <div class="rec-title" id="rec-title">RECORD — 4 COLORI</div>
+    <div class="rec-cols">
+      <div class="rec-col">
+        <div class="rec-col-title">🏆 LIVELLO MASSIMO</div>
+        <div id="rec-list"></div>
+      </div>
+    </div>
+  </div>
+  <button class="start-btn" onclick="startGame()">▶ INIZIA</button>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="game-screen" class="screen">
+  <div class="game-title">SIMON</div>
+  <div class="hud">
+    <div class="hud-item"><span class="hud-label">LIVELLO</span><span class="hud-val" id="level-disp">—</span></div>
+    <div class="hud-item"><span class="hud-label">RECORD</span><span class="hud-val" id="best-disp">0</span></div>
+  </div>
+  <div id="canvas-wrap"><canvas id="gameCanvas"></canvas></div>
+  <div class="status-text" id="status-text">—</div>
+  <div class="ctrl-row">
+    <button class="ctrl-btn" onclick="backToSetup()">⚙ MENU</button>
+  </div>
+</div>
+
+<!-- ══ NAME ENTRY ══ -->
+<div class="overlay" id="name-overlay">
+  <div class="ov-icon">🏆</div>
+  <div class="ov-title">RECORD!</div>
+  <div class="ov-stats" id="name-stats"></div>
+  <div class="name-entry-label">INSERISCI LE TUE INIZIALI (MAX 3)</div>
+  <input id="name-input" class="name-input" type="text" maxlength="3"
+         autocomplete="off" autocorrect="off" autocapitalize="characters"
+         spellcheck="false" placeholder="AAA"
+         oninput="this.value=this.value.toUpperCase()"
+         onkeydown="if(event.key==='Enter')confirmName()">
+  <div class="ov-btns"><button class="ov-btn" onclick="confirmName()">✓ OK</button></div>
+</div>
+
+<!-- ══ GAME OVER ══ -->
+<div class="overlay" id="overlay">
+  <div class="ov-icon" id="ov-icon">💀</div>
+  <div class="ov-title" id="ov-title">GAME OVER</div>
+  <div class="ov-stats" id="ov-stats"></div>
+  <div class="ov-record" id="ov-record"></div>
+  <div class="ov-btns">
+    <button class="ov-btn" onclick="restartGame()">↩ ANCORA</button>
+    <button class="ov-btn" onclick="backToSetup()">⚙ MENU</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+// 8 colors in order; modes use the first N
+const COLORS = [
+  { hex:'#ffcc00', dark:'#3a2800', freq:329, name:'GIALLO' },
+  { hex:'#3399ff', dark:'#001833', freq:392, name:'BLU'    },
+  { hex:'#ff3333', dark:'#440000', freq:261, name:'ROSSO'  },
+  { hex:'#33cc55', dark:'#004411', freq:196, name:'VERDE'  },
+  { hex:'#ff8822', dark:'#3d1500', freq:440, name:'ARANCIO'},
+  { hex:'#bb44ff', dark:'#260055', freq:164, name:'VIOLA'  },
+  { hex:'#22ddcc', dark:'#004d44', freq:523, name:'CIANO'  },
+  { hex:'#ff4499', dark:'#440022', freq:587, name:'ROSA'   },
+];
+const MODES  = [3,4,6,8];
+const CANVAS_RES  = 440;
+const INNER_FRAC  = 0.18;
+const OUTER_FRAC  = 0.91;
+const GAP_RAD     = 0.032;
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let numColors = 4;
+let sequence = [], playerIdx = 0, curLevel = 0;
+let accepting = false, animating = false;
+let litIdx = -1;   // currently lit sector (-1 = none)
+let wrongFlash = false;
+let pendingLevel = 0, audioCtx = null;
+let timers = [];
+
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+canvas.width  = CANVAS_RES;
+canvas.height = CANVAS_RES;
+
+// ═══════════════════════════════════════════════
+// RECORDS
+// ═══════════════════════════════════════════════
+const recKey = n => `simon_rec_${n}`;
+function loadRec(n)  { try{return JSON.parse(localStorage.getItem(recKey(n)))||[];}catch(e){return[];} }
+function inTop3(n,v) { const r=loadRec(n); return r.length<3||v>r[r.length-1].v; }
+function saveRec(n,v,nm){
+  const name=(nm||'---').toUpperCase().slice(0,3).padEnd(3,'·');
+  const r=loadRec(n); r.push({v,nm:name}); r.sort((a,b)=>b.v-a.v);
+  localStorage.setItem(recKey(n), JSON.stringify(r.slice(0,3)));
+}
+function bestLevel(n){ const r=loadRec(n); return r.length?r[0].v:0; }
+
+function renderRecords(){
+  const medals=['🥇','🥈','🥉'], el=document.getElementById('rec-list');
+  const r=loadRec(numColors);
+  document.getElementById('rec-title').textContent=`RECORD — ${numColors} COLORI`;
+  if(!r.length){ el.innerHTML='<div class="rec-empty">— nessun record —</div>'; return; }
+  el.innerHTML='';
+  r.forEach((e,i)=>{
+    const d=document.createElement('div'); d.className='rec-row';
+    d.innerHTML=`<span class="rec-rank">${medals[i]}</span><span class="rec-name">${e.nm||'---'}</span><span class="rec-val">Lv.&nbsp;${e.v}</span>`;
+    el.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// MODE / SCREENS
+// ═══════════════════════════════════════════════
+function selMode(n){
+  numColors=n;
+  MODES.forEach(x=>document.getElementById('mode-'+x).classList.toggle('sel',x===n));
+  renderRecords();
+}
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function backToSetup(){ killTimers(); accepting=false; animating=false; document.getElementById('overlay').classList.remove('show'); renderRecords(); showScreen('setup-screen'); }
+function killTimers(){ timers.forEach(clearTimeout); timers=[]; }
+function after(ms,fn){ const t=setTimeout(fn,ms); timers.push(t); return t; }
+
+// ═══════════════════════════════════════════════
+// GAME
+// ═══════════════════════════════════════════════
+function startGame(){
+  killTimers();
+  sequence=[]; playerIdx=0; curLevel=0;
+  litIdx=-1; wrongFlash=false; accepting=false; animating=false;
+  showScreen('game-screen');
+  updateHUD(); draw();
+  setStatus('Pronto...', false);
+  after(800, nextRound);
+}
+function restartGame(){ document.getElementById('overlay').classList.remove('show'); startGame(); }
+
+function nextRound(){
+  playerIdx=0;
+  sequence.push(Math.floor(Math.random()*numColors));
+  curLevel=sequence.length;
+  updateHUD();
+  setStatus(`LIVELLO  ${curLevel}`, false);
+  after(600, playSequence);
+}
+
+// ─── timing: gets faster every 4 levels, floors at fast ───
+function flashMs(){ return Math.max(200, 620 - Math.floor(curLevel/4)*65); }
+function pauseMs(){ return Math.max(100, 380 - Math.floor(curLevel/4)*45); }
+
+function playSequence(){
+  animating=true; accepting=false;
+  setStatus('Osserva...', false);
+  let i=0;
+  function tick(){
+    if(i>=sequence.length){
+      litIdx=-1; draw();
+      after(420, ()=>{ animating=false; accepting=true; setStatus('Tocca la sequenza!', true); });
+      return;
+    }
+    litIdx=sequence[i]; playColorSound(litIdx, flashMs()/1000); draw();
+    after(flashMs(), ()=>{ litIdx=-1; draw(); i++; after(pauseMs(), tick); });
+  }
+  after(300, tick);
+}
+
+// ─── player tap ───
+function onTap(idx){
+  if(!accepting||animating) return;
+  getAC();
+  litIdx=idx; playColorSound(idx, 0.22); draw();
+  after(180, ()=>{ litIdx=-1; draw(); });
+
+  if(idx!==sequence[playerIdx]){
+    accepting=false;
+    after(280, doWrongAnim);
+    return;
+  }
+  playerIdx++;
+  if(playerIdx===sequence.length){
+    accepting=false;
+    soundRoundOk();
+    setStatus('BRAVO! ✓', true);
+    after(850, nextRound);
+  }
+}
+
+function doWrongAnim(){
+  wrongFlash=true; draw(); soundWrong();
+  after(650, ()=>{
+    wrongFlash=false; draw();
+    const lv=curLevel;
+    if(inTop3(numColors,lv)) showNameEntry(lv);
+    else                      showGameOver(lv,false);
+  });
+}
+
+function updateHUD(){
+  document.getElementById('level-disp').textContent=curLevel||'—';
+  document.getElementById('best-disp').textContent=bestLevel(numColors);
+}
+function setStatus(txt,hi){
+  const el=document.getElementById('status-text');
+  el.textContent=txt; el.className='status-text'+(hi?' hi':'');
+}
+
+// ═══════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════
+function draw(){
+  const W=CANVAS_RES, CX=W/2, CY=W/2;
+  const inR=W*INNER_FRAC, outR=W*OUTER_FRAC;
+  const n=numColors, sa=(Math.PI*2)/n;
+
+  ctx.fillStyle='#0e0800'; ctx.fillRect(0,0,W,W);
+
+  for(let i=0;i<n;i++){
+    const a0=-Math.PI/2 + i*sa     + GAP_RAD;
+    const a1=-Math.PI/2 + (i+1)*sa - GAP_RAD;
+    const C=COLORS[i];
+    const active=(litIdx===i);
+
+    ctx.beginPath();
+    ctx.arc(CX,CY,outR,a0,a1);
+    ctx.arc(CX,CY,inR, a1,a0,true);
+    ctx.closePath();
+
+    if(wrongFlash){
+      ctx.fillStyle='#180000';
+      ctx.strokeStyle='#0e0800';
+    } else if(active){
+      ctx.shadowColor=C.hex; ctx.shadowBlur=32;
+      ctx.fillStyle=C.hex;
+      ctx.strokeStyle=C.hex;
+    } else {
+      ctx.fillStyle=C.dark;
+      ctx.strokeStyle='#0e0800';
+    }
+    ctx.fill(); ctx.shadowBlur=0;
+    ctx.lineWidth=3; ctx.stroke();
+
+    // color name label (only for ≤4 colors, dimly)
+    if(n<=4 && !active && !wrongFlash){
+      const midA=-Math.PI/2+(i+0.5)*sa;
+      const lr=(inR+outR)*0.55;
+      ctx.fillStyle='rgba(255,204,0,0.22)';
+      ctx.font=`bold ${Math.round(W*0.031)}px 'Courier New'`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(C.name, CX+Math.cos(midA)*lr, CY+Math.sin(midA)*lr);
+    }
+  }
+
+  // center disc
+  ctx.beginPath(); ctx.arc(CX,CY,inR*0.88,0,Math.PI*2);
+  ctx.fillStyle='#0e0800'; ctx.fill();
+  ctx.strokeStyle=wrongFlash?'#880000':accepting?'#5a3a00':'#2a1800';
+  ctx.lineWidth=2; ctx.stroke();
+
+  // level in center
+  if(curLevel>0){
+    const col=wrongFlash?'#ff2200':accepting?'#ffcc00':'#8a6a00';
+    ctx.fillStyle=col;
+    ctx.font=`bold ${Math.round(W*0.075)}px 'Courier New'`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(curLevel, CX, CY);
+  }
+  ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+}
+
+// ═══════════════════════════════════════════════
+// INPUT — hit-test on canvas
+// ═══════════════════════════════════════════════
+function hitTest(cx,cy){
+  const rect=canvas.getBoundingClientRect();
+  const x=(cx-rect.left)*(CANVAS_RES/rect.width);
+  const y=(cy-rect.top) *(CANVAS_RES/rect.height);
+  const dx=x-CANVAS_RES/2, dy=y-CANVAS_RES/2;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const inR=CANVAS_RES*INNER_FRAC, outR=CANVAS_RES*OUTER_FRAC;
+  if(dist<inR||dist>outR) return -1;
+  let ang=Math.atan2(dy,dx)+Math.PI/2;
+  if(ang<0) ang+=Math.PI*2; if(ang>=Math.PI*2) ang-=Math.PI*2;
+  return Math.min(Math.floor(ang/(Math.PI*2/numColors)), numColors-1);
+}
+canvas.addEventListener('click',   e=>{ const i=hitTest(e.clientX,e.clientY); if(i>=0) onTap(i); });
+canvas.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.touches[0]; const i=hitTest(t.clientX,t.clientY); if(i>=0) onTap(i); },{passive:false});
+
+// ═══════════════════════════════════════════════
+// NAME ENTRY / GAME OVER
+// ═══════════════════════════════════════════════
+function showNameEntry(lv){
+  pendingLevel=lv;
+  document.getElementById('name-stats').innerHTML=`Livello raggiunto: <b>${lv}</b><br>Modalità: ${numColors} colori`;
+  const inp=document.getElementById('name-input'); inp.value='';
+  document.getElementById('name-overlay').classList.add('show');
+  setTimeout(()=>inp.focus(),80);
+}
+function confirmName(){
+  const name=document.getElementById('name-input').value.trim()||'---';
+  document.getElementById('name-overlay').classList.remove('show');
+  saveRec(numColors,pendingLevel,name);
+  updateHUD(); showGameOver(pendingLevel,true);
+}
+function showGameOver(lv,isRec){
+  document.getElementById('ov-icon').textContent='💀';
+  document.getElementById('ov-title').textContent='GAME OVER';
+  document.getElementById('ov-stats').innerHTML=`Livello raggiunto: ${lv}<br>Modalità: ${numColors} colori`;
+  document.getElementById('ov-record').textContent=isRec?'🥇 Nuovo record!':'';
+  document.getElementById('overlay').classList.add('show');
+}
+
+// ═══════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════
+function getAC(){ if(!audioCtx)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} if(audioCtx?.state==='suspended')audioCtx.resume(); }
+function tone(freq,dur,type='sine',vol=0.18){
+  if(!audioCtx)return;
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.connect(g); g.connect(audioCtx.destination);
+  o.type=type; o.frequency.setValueAtTime(freq,audioCtx.currentTime);
+  g.gain.setValueAtTime(vol,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
+  o.start(); o.stop(audioCtx.currentTime+dur);
+}
+function playColorSound(idx,dur){ getAC(); tone(COLORS[idx].freq, Math.min(dur,0.6)); }
+function soundRoundOk(){
+  getAC();
+  [523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'sine',0.1),i*95));
+}
+function soundWrong(){
+  getAC();
+  tone(160,0.65,'sawtooth',0.14);
+  setTimeout(()=>tone(90,0.4,'sawtooth',0.1),120);
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+selMode(4);
+</script>
+</body>
+</html>
