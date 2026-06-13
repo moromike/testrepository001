@@ -2,13 +2,14 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes,maximum-scale=5.0">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>CACCHE</title>
 <style>
 :root{--bg:#0e0800;--gold:#ffcc00;--wood:#5a3a00;--wood2:#3a2200}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace}
-#frame{width:min(98vw,calc(100dvh*.62));height:100dvh;background:var(--bg);border-left:12px solid var(--wood);border-right:12px solid var(--wood);border-top:8px solid var(--wood2);border-bottom:8px solid var(--wood2);display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden;transition:width .15s,border .15s}
+#frame{width:min(98vw,calc(100dvh*.62));height:100dvh;background:var(--bg);border-left:12px solid var(--wood);border-right:12px solid var(--wood);border-top:8px solid var(--wood2);border-bottom:8px solid var(--wood2);display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
+/* In game mode: use full screen width for max cell size */
 #frame.ingame{width:min(100vw,100dvh);border-left:4px solid var(--wood);border-right:4px solid var(--wood)}
 #frame::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.15) 3px,rgba(0,0,0,.15) 4px);pointer-events:none;z-index:100}
 .screen{display:none;flex-direction:column;align-items:center;width:100%;height:100%}
@@ -17,9 +18,9 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 /* SETUP */
 #setup{justify-content:space-around;padding:14px 12px}
 .title{font-size:clamp(2rem,10vw,3.2rem);color:var(--gold);text-shadow:0 0 20px #ffcc0088;letter-spacing:.15em;font-weight:900}
-.subtitle{color:#886600;font-size:.75rem;letter-spacing:.2em;margin-top:2px;text-align:center}
+.subtitle{color:#886600;font-size:.75rem;letter-spacing:.2em;text-align:center}
 .diff-row{display:flex;gap:8px;justify-content:center}
-.diff-btn{background:#1a0d00;border:2px solid #4a3200;color:#886600;font-size:.72rem;padding:8px 12px;border-radius:8px;cursor:pointer;letter-spacing:.08em;font-family:'Courier New',monospace;text-align:center;line-height:1.5}
+.diff-btn{background:#1a0d00;border:2px solid #4a3200;color:#886600;font-size:.72rem;padding:8px 12px;border-radius:8px;cursor:pointer;letter-spacing:.06em;font-family:'Courier New',monospace;text-align:center;line-height:1.6}
 .diff-btn.sel{border-color:var(--gold);color:var(--gold);background:#2a1800;box-shadow:0 0 10px #ffcc0044}
 .play-btn{background:#2a1800;border:2px solid var(--gold);color:var(--gold);font-size:1.4rem;letter-spacing:.2em;font-weight:900;width:180px;height:56px;border-radius:8px;cursor:pointer;text-shadow:0 0 8px #ffcc0088;box-shadow:0 0 16px #ffcc0033;font-family:'Courier New',monospace}
 .play-btn:active{transform:scale(.96)}
@@ -30,30 +31,25 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .rec-table td:last-child{text-align:right;color:var(--gold)}
 
 /* GAME */
-#game{justify-content:flex-start;padding:6px 0 4px;gap:0}
-.hud{display:flex;align-items:center;justify-content:space-between;width:98%;padding:2px 4px;flex-shrink:0;height:40px}
+#game{justify-content:flex-start;padding:4px 0 2px}
+.hud{display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 8px;flex-shrink:0;height:42px}
 .hud-cell{display:flex;align-items:center;gap:3px}
 .hud-icon{font-size:1.1rem;line-height:1}
 .hud-val{color:var(--gold);font-size:1.2rem;font-weight:900;min-width:2.2em;text-align:right}
 .hud-timer{color:var(--gold);font-size:1.15rem;font-weight:900;letter-spacing:.08em}
-.flag-toggle{background:#1a0d00;border:2px solid #4a3200;color:#886600;font-size:1.1rem;width:40px;height:40px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.flag-toggle{background:#1a0d00;border:2px solid #4a3200;color:#886600;font-size:1.1rem;width:38px;height:38px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .flag-toggle.on{border-color:var(--gold);color:var(--gold);background:#2a1800;box-shadow:0 0 8px #ffcc0044}
-#grid-wrap{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#grid{display:grid;gap:2px}
-.cell{background:#2a1800;border:1.5px solid #5a3a00;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;touch-action:none;color:var(--gold);font-family:'Courier New',monospace;font-weight:700;transition:background .06s}
-.cell.revealed{background:#120900;border-color:#281400;cursor:default}
-.cell.revealed:empty{background:#130a00}
-.cell.n1{color:#4499ff}
-.cell.n2{color:#33cc55}
-.cell.n3{color:#ff4444}
-.cell.n4{color:#6677ff}
-.cell.n5{color:#ff7733}
-.cell.n6{color:#22ddcc}
-.cell.n7{color:#cc44ff}
-.cell.n8{color:#888888}
+/* Scrollable grid container */
+#grid-wrap{flex:1;min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:flex-start}
+#grid{display:grid;gap:1px;flex-shrink:0}
+.cell{background:#2a1800;border:1.5px solid #5a3a00;border-radius:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;font-family:'Courier New',monospace;font-weight:700;color:var(--gold)}
+.cell.revealed{background:#120900;border-color:#221000;cursor:default}
+.cell.n1{color:#4499ff}.cell.n2{color:#33cc55}.cell.n3{color:#ff4444}
+.cell.n4{color:#6677ff}.cell.n5{color:#ff7733}.cell.n6{color:#22ddcc}
+.cell.n7{color:#cc44ff}.cell.n8{color:#888888}
 .cell.boom{background:#3a0500}
 .cell.wrong-flag{background:#1a0000}
-.hint-flag{display:none}
+.scroll-hint{color:#3a2200;font-size:.55rem;letter-spacing:.1em;flex-shrink:0;padding:2px 0;text-align:center;width:100%}
 
 /* GAMEOVER */
 #gameover{justify-content:center;gap:20px;padding:20px}
@@ -95,16 +91,16 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 <!-- SETUP -->
 <div id="setup" class="screen active">
   <div style="text-align:center">
-    <div style="font-size:2.8rem;line-height:1">💩</div>
+    <div style="font-size:2.6rem;line-height:1">💩</div>
     <div class="title">CACCHE</div>
     <div class="subtitle">CAMPO MINATO</div>
   </div>
   <div style="text-align:center">
     <div class="rec-label" style="text-align:center;margin-bottom:8px">DIFFICOLTÀ</div>
     <div class="diff-row">
-      <button class="diff-btn" onclick="selDiff(1)">FACILE<br><span style="font-size:.62rem;opacity:.7">9×9 · 10💩</span></button>
-      <button class="diff-btn sel" onclick="selDiff(2)">MEDIO<br><span style="font-size:.62rem;opacity:.7">12×12 · 25💩</span></button>
-      <button class="diff-btn" onclick="selDiff(3)">DIFFICILE<br><span style="font-size:.62rem;opacity:.7">16×16 · 48💩</span></button>
+      <button class="diff-btn" onclick="selDiff(1)">PRINCIPIANTE<br><span style="font-size:.6rem;opacity:.7">9×9 · 10💩</span></button>
+      <button class="diff-btn sel" onclick="selDiff(2)">INTERMEDIO<br><span style="font-size:.6rem;opacity:.7">16×16 · 40💩</span></button>
+      <button class="diff-btn" onclick="selDiff(3)">ESPERTO<br><span style="font-size:.6rem;opacity:.7">16×30 · 99💩</span></button>
     </div>
   </div>
   <div style="width:92%">
@@ -122,12 +118,10 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
       <span class="hud-val" id="mineCount">0</span>
     </div>
     <span class="hud-timer" id="timerDisplay">00:00</span>
-    <button class="flag-toggle" id="flagBtn" onclick="toggleFlagMode()" title="Modalità bandiera">🚩</button>
+    <button class="flag-toggle" id="flagBtn" onclick="toggleFlagMode()">🚩</button>
   </div>
-  <div id="grid-wrap">
-    <div id="grid"></div>
-  </div>
-  <div class="hint-flag">TIENI PREMUTO = 🚩 &nbsp;·&nbsp; 🚩 = MODALITÀ BANDIERA</div>
+  <div id="grid-wrap"><div id="grid"></div></div>
+  <div class="scroll-hint" id="scrollHint"></div>
 </div>
 
 <!-- GAMEOVER -->
@@ -172,34 +166,35 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 
 </div>
 <script>
-// ── CONSTANTS ──────────────────────────────────────────────────────────────
+// ── CONFIGS: standard Windows Minesweeper ──────────────────────────────────
+// Principiante: 9×9 10 mine  |  Intermedio: 16×16 40 mine  |  Esperto: 16×30 99 mine
 const CFGS={
-  1:{label:'FACILE',   cols:9, rows:9, mines:10},
-  2:{label:'MEDIO',    cols:12,rows:12,mines:25},
-  3:{label:'DIFFICILE',cols:16,rows:16,mines:48}
+  1:{label:'PRINCIPIANTE',cols:9, rows:9, mines:10},
+  2:{label:'INTERMEDIO',  cols:16,rows:16,mines:40},
+  3:{label:'ESPERTO',     cols:30,rows:16,mines:99}  // 30 cols × 16 rows, scroll orizzontale
 };
 const ALPHA='ABCDEFGHIJKLMNOPQRSTUVWXYZ·';
+const MIN_CELL=28; // min cell size in px — always tappable
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-let diff=2, board=[], rows=0, cols=0, totalMines=0;
-let firstClick=true, gameActive=false, flagMode=false;
-let revealedCount=0, minesLeft=0;
-let timerIv=null, startTime=0;
-let pendingMs=0, nePos=0, neName=['A','A','A'];
-let longPressTimer=null, lpCell=null;
-let lastTouchMs=0;
+let diff=2,board=[],rows=0,cols=0,totalMines=0;
+let firstClick=true,gameActive=false,flagMode=false;
+let revealedCount=0,minesLeft=0;
+let timerIv=null,startTime=0;
+let pendingMs=0,nePos=0,neName=['A','A','A'];
+let longPressTimer=null,lastTouchMs=0;
+// touch state: track start position to distinguish tap vs scroll
+let ts=null; // {x,y,t,r,c}
 
 // ── AUDIO ──────────────────────────────────────────────────────────────────
 let aCtx=null;
 function ensureAudio(){if(!aCtx)aCtx=new(window.AudioContext||window.webkitAudioContext)()}
 function tone(freq,type,dur,vol=0.3){
-  const g=aCtx.createGain();
-  g.connect(aCtx.destination);
+  const g=aCtx.createGain();g.connect(aCtx.destination);
   g.gain.setValueAtTime(vol,aCtx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001,aCtx.currentTime+dur);
-  const o=aCtx.createOscillator();
-  o.connect(g); o.type=type; o.frequency.setValueAtTime(freq,aCtx.currentTime);
-  o.start(); o.stop(aCtx.currentTime+dur);
+  const o=aCtx.createOscillator();o.connect(g);o.type=type;
+  o.frequency.setValueAtTime(freq,aCtx.currentTime);o.start();o.stop(aCtx.currentTime+dur);
 }
 function sndReveal(){tone(500,'square',.04,.12)}
 function sndFlag(){tone(700,'square',.05,.18)}
@@ -207,7 +202,7 @@ function sndBoom(){tone(90,'sawtooth',.5,.5);setTimeout(()=>tone(70,'sawtooth',.
 function sndWin(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,'square',.15,.3),i*110))}
 
 // ── RECORDS ────────────────────────────────────────────────────────────────
-function rKey(d){return'mines_rec_'+d}
+function rKey(d){return'mines2_rec_'+d}
 function rLoad(d){try{return JSON.parse(localStorage.getItem(rKey(d)))||{times:[]}}catch(e){return{times:[]}}}
 function rSave(d,r){localStorage.setItem(rKey(d),JSON.stringify(r))}
 function inTop3(r,v){return r.times.length<3||v<r.times[r.times.length-1].v}
@@ -217,9 +212,13 @@ function fmtHud(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m.toSt
 
 // ── SCREENS ────────────────────────────────────────────────────────────────
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-function showSetup(){stopTimer();gameActive=false;document.getElementById('frame').classList.remove('ingame');renderSetupRec();showScreen('setup')}
+function showSetup(){
+  stopTimer();gameActive=false;
+  document.getElementById('frame').classList.remove('ingame');
+  renderSetupRec();showScreen('setup');
+}
 function showRecords(){
-  const c=document.getElementById('recContent'); c.innerHTML='';
+  const c=document.getElementById('recContent');c.innerHTML='';
   [1,2,3].forEach(d=>{
     const cfg=CFGS[d],rec=rLoad(d);
     let h=`<div style="width:92%;margin:0 auto 14px"><div class="rec-section-title">${cfg.label} (${cfg.cols}×${cfg.rows})</div>`;
@@ -246,17 +245,19 @@ function elapsed(){return Date.now()-startTime}
 
 // ── GAME START ─────────────────────────────────────────────────────────────
 function startGame(){
-  ensureAudio(); stopTimer();
+  ensureAudio();stopTimer();
   const cfg=CFGS[diff];
-  rows=cfg.rows; cols=cfg.cols; totalMines=cfg.mines;
-  firstClick=true; gameActive=false; flagMode=false;
-  revealedCount=0; minesLeft=totalMines;
+  rows=cfg.rows;cols=cfg.cols;totalMines=cfg.mines;
+  firstClick=true;gameActive=false;flagMode=false;
+  revealedCount=0;minesLeft=totalMines;ts=null;
   document.getElementById('flagBtn').classList.remove('on');
   document.getElementById('mineCount').textContent=totalMines;
   document.getElementById('timerDisplay').textContent='00:00';
   document.getElementById('frame').classList.add('ingame');
   showScreen('game');
-  initBoard(); buildGrid();
+  initBoard();
+  // Wait two frames for frame to expand to full width before measuring
+  requestAnimationFrame(()=>requestAnimationFrame(buildGrid));
 }
 
 function initBoard(){
@@ -279,27 +280,39 @@ function placeMines(sr,sc){
 
 // ── GRID BUILD ─────────────────────────────────────────────────────────────
 function buildGrid(){
-  const wrap=document.getElementById('grid-wrap'), grid=document.getElementById('grid');
-  requestAnimationFrame(()=>{
-    const gap=1;
-    const aw=wrap.clientWidth*.995, ah=wrap.clientHeight*.995;
-    const cs=Math.max(16,Math.min(Math.floor((aw-(cols-1)*gap)/cols),Math.floor((ah-(rows-1)*gap)/rows)));
-    const fs=Math.max(9,Math.floor(cs*.52));
-    grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
-    grid.style.gap=gap+'px';
-    grid.innerHTML='';
-    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-      const el=document.createElement('div');
-      el.className='cell';
-      el.style.cssText=`width:${cs}px;height:${cs}px;font-size:${fs}px`;
-      el.dataset.r=r; el.dataset.c=c;
-      el.addEventListener('touchstart',onTS,{passive:false});
-      el.addEventListener('touchend',onTE,{passive:false});
-      el.addEventListener('click',onCellClick);
-      grid.appendChild(el);
-    }
-    gameActive=true;
-  });
+  const wrap=document.getElementById('grid-wrap'),grid=document.getElementById('grid');
+  const aw=wrap.clientWidth,ah=wrap.clientHeight;
+  // Cell size: fit-to-screen OR minimum 28px (then grid scrolls)
+  const gap=1;
+  const byW=Math.floor((aw-(cols-1)*gap)/cols);
+  const byH=Math.floor((ah-(rows-1)*gap)/rows);
+  const cs=Math.max(MIN_CELL,Math.min(byW,byH));
+  const fs=Math.max(9,Math.floor(cs*.52));
+
+  // Show scroll hint for Expert mode
+  const totalW=cols*cs+(cols-1)*gap;
+  const totalH=rows*cs+(rows-1)*gap;
+  const sh=document.getElementById('scrollHint');
+  const hints=[];
+  if(totalW>aw+4)hints.push('← SCORRI →');
+  if(totalH>ah+4)hints.push('↕ SCORRI');
+  sh.textContent=hints.join('  ');
+
+  grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
+  grid.style.gap=gap+'px';
+  grid.innerHTML='';
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const el=document.createElement('div');
+    el.className='cell';
+    el.style.cssText=`width:${cs}px;height:${cs}px;font-size:${fs}px`;
+    el.dataset.r=r;el.dataset.c=c;
+    el.addEventListener('touchstart',onTS,{passive:true});
+    el.addEventListener('touchmove',onTM,{passive:true});
+    el.addEventListener('touchend',onTE,{passive:true});
+    el.addEventListener('click',onCellClick);
+    grid.appendChild(el);
+  }
+  gameActive=true;
 }
 
 // ── CELL RENDER ────────────────────────────────────────────────────────────
@@ -307,7 +320,7 @@ function renderCell(r,c){
   const el=document.querySelector(`#grid .cell[data-r="${r}"][data-c="${c}"]`);
   if(!el)return;
   const cell=board[r][c];
-  el.className='cell'; el.textContent='';
+  el.className='cell';el.textContent='';
   if(cell.flagged){
     if(!gameActive&&!cell.mine){el.classList.add('wrong-flag');el.textContent='❌'}
     else el.textContent='🚩';
@@ -320,31 +333,40 @@ function renderCell(r,c){
 }
 function renderAll(){for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)renderCell(r,c)}
 
-// ── TOUCH / CLICK ──────────────────────────────────────────────────────────
+// ── TOUCH HANDLING ─────────────────────────────────────────────────────────
+// Tap vs scroll detection: if finger moves >8px or stays >420ms without moving → not a tap
 function onTS(e){
-  e.preventDefault();
-  if(!gameActive)return;
-  const r=+this.dataset.r, c=+this.dataset.c;
-  lpCell={r,c};
-  longPressTimer=setTimeout(()=>{longPressTimer=null;flagCell(r,c)},420);
+  const t=e.touches[0];
+  ts={x:t.clientX,y:t.clientY,t:Date.now(),r:+this.dataset.r,c:+this.dataset.c,moved:false};
+  longPressTimer=setTimeout(()=>{
+    longPressTimer=null;
+    if(ts&&!ts.moved&&gameActive){flagCell(ts.r,ts.c);ts=null}
+  },420);
+}
+function onTM(e){
+  if(!ts)return;
+  const t=e.touches[0];
+  if(Math.abs(t.clientX-ts.x)>8||Math.abs(t.clientY-ts.y)>8){
+    ts.moved=true; // scrolling — cancel any game action
+    if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}
+  }
 }
 function onTE(e){
-  e.preventDefault();
   lastTouchMs=Date.now();
-  if(longPressTimer){
-    clearTimeout(longPressTimer); longPressTimer=null;
-    if(gameActive&&lpCell){
-      if(flagMode)flagCell(lpCell.r,lpCell.c);
-      else tapCell(lpCell.r,lpCell.c);
-    }
+  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}
+  if(!ts||ts.moved||!gameActive){ts=null;return}
+  const dt=Date.now()-ts.t;
+  if(dt<300){ // short tap
+    if(flagMode)flagCell(ts.r,ts.c);
+    else tapCell(ts.r,ts.c);
   }
-  lpCell=null;
+  ts=null;
 }
 function onCellClick(){
-  if(Date.now()-lastTouchMs<400)return; // prevent double-fire after touch
+  if(Date.now()-lastTouchMs<400)return; // suppress after touch
   if(!gameActive)return;
-  const r=+this.dataset.r, c=+this.dataset.c;
-  if(flagMode)flagCell(r,c); else tapCell(r,c);
+  const r=+this.dataset.r,c=+this.dataset.c;
+  if(flagMode)flagCell(r,c);else tapCell(r,c);
 }
 
 // ── GAME ACTIONS ───────────────────────────────────────────────────────────
@@ -382,8 +404,7 @@ function revealCell(r,c){
 function chordClick(r,c){
   const cell=board[r][c];
   if(!cell.revealed||cell.adj===0)return;
-  let flags=0;
-  const neighbors=[];
+  let flags=0;const neighbors=[];
   for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
     if(!dr&&!dc)continue;
     const nr=r+dr,nc=c+dc;
@@ -400,15 +421,14 @@ function chordClick(r,c){
 }
 
 function checkWin(){if(revealedCount===rows*cols-totalMines)gameWin()}
-
 function toggleFlagMode(){flagMode=!flagMode;document.getElementById('flagBtn').classList.toggle('on',flagMode)}
 
 // ── WIN / LOSE ─────────────────────────────────────────────────────────────
 function gameWin(){
   if(!gameActive)return;
   gameActive=false;
-  const ms=elapsed(); stopTimer(); sndWin();
-  const rec=rLoad(diff), isNew=inTop3(rec,ms);
+  const ms=elapsed();stopTimer();sndWin();
+  const rec=rLoad(diff),isNew=inTop3(rec,ms);
   document.getElementById('goTitle').textContent='HAI VINTO! 🎉';
   document.getElementById('goTitle').className='go-title win';
   document.getElementById('goTime').textContent=fmt(ms);
@@ -419,7 +439,7 @@ function gameWin(){
 
 function gameLose(){
   if(!gameActive)return;
-  gameActive=false; stopTimer(); sndBoom();
+  gameActive=false;stopTimer();sndBoom();
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(board[r][c].mine&&!board[r][c].flagged)board[r][c].revealed=true;
   renderAll();
   document.getElementById('goTitle').textContent='💩 BOOM!';
