@@ -41,14 +41,14 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .flag-toggle.on{border-color:var(--gold);color:var(--gold);background:#2a1800;box-shadow:0 0 8px #ffcc0044}
 /* Scrollable grid container */
 #grid-wrap{flex:1;min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:flex-start}
-#grid{display:grid;gap:1px;flex-shrink:0}
-.cell{background:#2a1800;border:1.5px solid #5a3a00;border-radius:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;font-family:'Courier New',monospace;font-weight:700;color:var(--gold)}
-.cell.revealed{background:#120900;border-color:#221000;cursor:default}
-.cell.n1{color:#4499ff}.cell.n2{color:#33cc55}.cell.n3{color:#ff4444}
-.cell.n4{color:#6677ff}.cell.n5{color:#ff7733}.cell.n6{color:#22ddcc}
-.cell.n7{color:#cc44ff}.cell.n8{color:#888888}
-.cell.boom{background:#3a0500}
-.cell.wrong-flag{background:#1a0000}
+#grid{display:grid;gap:1px;flex-shrink:0;background:#000}
+.cell{background:#ffcc00;border:1px solid #000;border-radius:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;font-family:'Courier New',monospace;font-weight:900;color:#000}
+.cell.revealed{background:#b89000;border-color:#000;cursor:default}
+.cell.n1{color:#0000cc}.cell.n2{color:#006600}.cell.n3{color:#cc0000}
+.cell.n4{color:#000099}.cell.n5{color:#880000}.cell.n6{color:#007777}
+.cell.n7{color:#000000}.cell.n8{color:#555555}
+.cell.boom{background:#ff3300}
+.cell.wrong-flag{background:#ff6600}
 .scroll-hint{color:#3a2200;font-size:.55rem;letter-spacing:.1em;flex-shrink:0;padding:2px 0;text-align:center;width:100%}
 
 /* GAMEOVER */
@@ -287,7 +287,7 @@ function buildGrid(){
   const byW=Math.floor((aw-(cols-1)*gap)/cols);
   const byH=Math.floor((ah-(rows-1)*gap)/rows);
   const cs=Math.max(MIN_CELL,Math.min(byW,byH));
-  const fs=Math.max(9,Math.floor(cs*.52));
+  const fs=Math.max(10,Math.floor(cs*.68));
 
   // Show scroll hint for Expert mode
   const totalW=cols*cs+(cols-1)*gap;
