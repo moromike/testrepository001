@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>DAMA</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
+:root{--bg:#0e0800;--gold:#ffcc00;--wood:#5a3a00}
+body{background:var(--bg);color:var(--gold);font-family:'Courier New',monospace;width:100%;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+/* SETUP */
+#setup{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;width:100%;height:100%}
+#setup .icon{font-size:52px}
+#setup h1{font-size:42px;letter-spacing:8px;color:var(--gold);text-shadow:0 0 18px var(--gold)}
+#setup .sub{font-size:14px;letter-spacing:4px;opacity:.7}
+#setup .instructions{font-size:11px;letter-spacing:2px;line-height:1.8;opacity:.6;max-width:340px}
+.btn{background:var(--wood);color:var(--gold);border:2px solid var(--gold);font-family:'Courier New',monospace;font-size:16px;letter-spacing:3px;padding:12px 28px;cursor:pointer;transition:all .15s}
+.btn:hover,.btn:active{background:var(--gold);color:#000}
+
+/* GAME */
+#game{display:none;width:100%;height:100vh;flex-direction:row;align-items:stretch}
+.strip{width:52px;min-width:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--bg);border:1px solid #2a1a00;position:relative}
+.strip-inner{display:flex;flex-direction:column;align-items:center;gap:8px}
+#strip-l .strip-inner{transform:rotate(-90deg)}
+#strip-r .strip-inner{transform:rotate(90deg)}
+.turn-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--gold);transition:background .2s}
+.turn-dot.active{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.strip-label{font-size:11px;letter-spacing:3px;white-space:nowrap;color:var(--gold)}
+.piece-count{font-size:18px;font-weight:bold;color:var(--gold)}
+
+#board-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+#hud{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;color:var(--gold);text-shadow:0 0 8px var(--gold);z-index:10;white-space:nowrap;pointer-events:none}
+#board{display:grid;position:relative;image-rendering:pixelated}
+
+/* CRT scanlines */
+#board::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px);pointer-events:none;z-index:5}
+
+.cell{position:relative;cursor:default;display:flex;align-items:center;justify-content:center}
+.cell.dark{background:#7a4a18}
+.cell.light{background:#d4a853}
+.cell.selected{background:#2a7a2a !important}
+.cell.valid-move{background:#3a6a3a !important}
+.cell.valid-cap{background:#7a2a2a !important}
+.cell.dark:hover{filter:brightness(1.15)}
+
+.piece{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0;position:relative;z-index:2;box-shadow:0 3px 8px rgba(0,0,0,.7);cursor:pointer;transition:transform .1s}
+.piece:active{transform:scale(.93)}
+.piece.white{background:radial-gradient(circle at 35% 35%,#fff8d0,#c8a020)}
+.piece.black{background:radial-gradient(circle at 35% 35%,#555,#111)}
+.piece.king{font-size:60%}
+
+/* GAMEOVER */
+#gameover{display:none;position:absolute;inset:0;background:rgba(0,0,0,.85);flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:20}
+#gameover h2{font-size:36px;letter-spacing:6px;color:var(--gold);text-shadow:0 0 24px var(--gold)}
+.btn-row{display:flex;gap:14px}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="icon">🎭</div>
+  <h1>DAMA</h1>
+  <div class="sub">2 GIOCATORI</div>
+  <div class="instructions">APPOGGIATE IL TELEFONO SUL TAVOLO<br>RUOTATE IN ORIZZONTALE<br>BIANCO: LATO SINISTRO &nbsp;·&nbsp; NERO: LATO DESTRO</div>
+  <button class="btn" onclick="startGame()">▶ GIOCA</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="strip" id="strip-l">
+    <div class="strip-inner">
+      <div class="turn-dot" id="dot-w"></div>
+      <div class="strip-label">BIANCO</div>
+      <div class="piece-count" id="cnt-w">12</div>
+    </div>
+  </div>
+  <div id="board-wrap">
+    <div id="hud"></div>
+    <div id="board"></div>
+    <div id="gameover">
+      <h2 id="go-title"></h2>
+      <div class="btn-row">
+        <button class="btn" onclick="startGame()">▶ RIVINCITA</button>
+        <button class="btn" onclick="showSetup()">◀ MENU</button>
+      </div>
+    </div>
+  </div>
+  <div class="strip" id="strip-r">
+    <div class="strip-inner">
+      <div class="turn-dot" id="dot-b"></div>
+      <div class="strip-label">NERO</div>
+      <div class="piece-count" id="cnt-b">12</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const EMPTY=0,WM=1,BM=2,WK=3,BK=4;
+let board,turn,selected,validMoves,chainPiece,wCount,bCount;
+let AudioCtx=null;
+
+function ac(){if(!AudioCtx)AudioCtx=new(window.AudioContext||window.webkitAudioContext)();return AudioCtx;}
+function playTone(freq,type,dur,vol=0.3,delay=0){
+  const c=ac(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);
+  o.type=type;o.frequency.value=freq;
+  const t=c.currentTime+delay;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.start(t);o.stop(t+dur);
+}
+function sndMove(){playTone(440,'square',.08);}
+function sndCapture(){playTone(220,'sawtooth',.22);}
+function sndKing(){playTone(660,'square',.12,0.3,0);playTone(880,'square',.12,0.3,.1);}
+function sndWin(){[523,659,784,1047].forEach((f,i)=>playTone(f,'square',.2,0.3,i*.15));}
+
+function color(p){if(p===WM||p===WK)return'w';if(p===BM||p===BK)return'b';return null;}
+function isKing(p){return p===WK||p===BK;}
+
+function getCaps(r,c,brd,col){
+  const dirs=[[-1,-1],[-1,1],[1,-1],[1,1]],res=[];
+  const p=brd[r][c];
+  for(const[dr,dc]of dirs){
+    // Italian Dama: men capture in all 4 diagonal directions (kings too)
+    const mr=r+dr,mc=c+dc,tr=r+2*dr,tc=c+2*dc;
+    if(mr<0||mr>7||mc<0||mc>7||tr<0||tr>7||tc<0||tc>7)continue;
+    const mid=brd[mr][mc];
+    if(color(mid)&&color(mid)!==col&&brd[tr][tc]===EMPTY)
+      res.push({fr:r,fc:c,tr,tc,mr,mc});
+  }
+  return res;
+}
+
+function getMoves(r,c,brd,col){
+  const p=brd[r][c],res=[];
+  const fwd=col==='w'?-1:1;
+  const dirs=isKing(p)?[[-1,-1],[-1,1],[1,-1],[1,1]]:[[fwd,-1],[fwd,1]];
+  for(const[dr,dc]of dirs){
+    const tr=r+dr,tc=c+dc;
+    if(tr<0||tr>7||tc<0||tc>7)continue;
+    if(brd[tr][tc]===EMPTY)res.push({fr:r,fc:c,tr,tc,mr:-1,mc:-1});
+  }
+  return res;
+}
+
+function getAllCaps(brd,col){
+  const res=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++)
+    if(color(brd[r][c])===col)res.push(...getCaps(r,c,brd,col));
+  return res;
+}
+
+function getValid(r,c,brd,col){
+  const caps=getAllCaps(brd,col);
+  if(caps.length>0)return getCaps(r,c,brd,col);
+  return getMoves(r,c,brd,col);
+}
+
+function initBoard(){
+  board=Array.from({length:8},()=>Array(8).fill(EMPTY));
+  for(let r=0;r<3;r++)for(let c=0;c<8;c++)if((r+c)%2===1)board[r][c]=BM;
+  for(let r=5;r<8;r++)for(let c=0;c<8;c++)if((r+c)%2===1)board[r][c]=WM;
+  turn='w';selected=null;validMoves=[];chainPiece=null;wCount=12;bCount=12;
+}
+
+function startGame(){
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  document.getElementById('gameover').style.display='none';
+  initBoard();
+  buildBoard();
+  render();
+}
+
+function showSetup(){
+  document.getElementById('game').style.display='none';
+  document.getElementById('setup').style.display='flex';
+}
+
+let cellSize=0;
+
+function buildBoard(){
+  const wrap=document.getElementById('board-wrap');
+  const w=wrap.clientWidth,h=wrap.clientHeight;
+  const size=Math.min(w,h-30);
+  cellSize=Math.floor(size/8);
+  const bd=document.getElementById('board');
+  bd.style.width=(cellSize*8)+'px';
+  bd.style.height=(cellSize*8)+'px';
+  bd.style.gridTemplateColumns=`repeat(8,${cellSize}px)`;
+  bd.innerHTML='';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const cell=document.createElement('div');
+    cell.className='cell '+((r+c)%2===1?'dark':'light');
+    cell.style.width=cellSize+'px';cell.style.height=cellSize+'px';
+    cell.dataset.r=r;cell.dataset.c=c;
+    cell.addEventListener('click',()=>onSquareClick(r,c));
+    bd.appendChild(cell);
+  }
+}
+
+function render(){
+  const bd=document.getElementById('board');
+  const cells=bd.querySelectorAll('.cell');
+  const selSet=selected?`${selected[0]},${selected[1]}`:null;
+  const moveTos=new Map();
+  for(const mv of validMoves)moveTos.set(`${mv.tr},${mv.tc}`,mv.mr>=0?'cap':'move');
+
+  cells.forEach(cell=>{
+    const r=+cell.dataset.r,c=+cell.dataset.c;
+    const isDark=(r+c)%2===1;
+    cell.className='cell '+(isDark?'dark':'light');
+    const key=`${r},${c}`;
+    if(selSet===key)cell.classList.add('selected');
+    else if(moveTos.has(key))cell.classList.add(moveTos.get(key)==='cap'?'valid-cap':'valid-move');
+
+    // remove old piece
+    const old=cell.querySelector('.piece');
+    if(old)cell.removeChild(old);
+
+    const p=board[r][c];
+    if(p!==EMPTY){
+      const div=document.createElement('div');
+      const ps=Math.floor(cellSize*.78);
+      div.style.width=ps+'px';div.style.height=ps+'px';
+      div.className='piece '+(color(p)==='w'?'white':'black')+(isKing(p)?' king':'');
+      if(isKing(p)){div.textContent='♛';div.style.fontSize=Math.floor(ps*.5)+'px';}
+      div.style.color=color(p)==='w'?'#3a2000':'#ffd700';
+      cell.appendChild(div);
+    }
+  });
+
+  // HUD
+  document.getElementById('hud').textContent=
+    chainPiece?'CATTURA OBBLIGATORIA!':(turn==='w'?'TURNO: BIANCO':'TURNO: NERO');
+
+  // strips
+  document.getElementById('cnt-w').textContent=wCount;
+  document.getElementById('cnt-b').textContent=bCount;
+  document.getElementById('dot-w').className='turn-dot'+(turn==='w'?' active':'');
+  document.getElementById('dot-b').className='turn-dot'+(turn==='b'?' active':'');
+}
+
+function execMove(mv){
+  const p=board[mv.fr][mv.fc];
+  board[mv.fr][mv.fc]=EMPTY;
+  board[mv.tr][mv.tc]=p;
+  let captured=false;
+  if(mv.mr>=0){
+    const cp=board[mv.mr][mv.mc];
+    board[mv.mr][mv.mc]=EMPTY;
+    if(color(cp)==='w')wCount--;else bCount--;
+    captured=true;
+    sndCapture();
+  } else {
+    sndMove();
+  }
+
+  // promotion check
+  let promoted=false;
+  if(board[mv.tr][mv.tc]===WM&&mv.tr===0){board[mv.tr][mv.tc]=WK;promoted=true;sndKing();}
+  if(board[mv.tr][mv.tc]===BM&&mv.tr===7){board[mv.tr][mv.tc]=BK;promoted=true;sndKing();}
+
+  if(captured&&!promoted){
+    // check for chain
+    const further=getCaps(mv.tr,mv.tc,board,turn);
+    if(further.length>0){
+      chainPiece=[mv.tr,mv.tc];
+      selected=[mv.tr,mv.tc];
+      validMoves=further;
+      render();
+      checkEnd();
+      return;
+    }
+  }
+
+  // end turn
+  chainPiece=null;selected=null;validMoves=[];
+  turn=turn==='w'?'b':'w';
+  render();
+  checkEnd();
+}
+
+function onSquareClick(r,c){
+  if(document.getElementById('gameover').style.display==='flex')return;
+  const p=board[r][c];
+
+  // if in chain, only allow the chained piece to be "selected" and moves executed
+  if(chainPiece){
+    const mv=validMoves.find(m=>m.tr===r&&m.tc===c);
+    if(mv){execMove(mv);return;}
+    return;
+  }
+
+  if(selected){
+    const mv=validMoves.find(m=>m.tr===r&&m.tc===c);
+    if(mv){execMove(mv);return;}
+    // click on own piece: reselect
+    if(color(p)===turn){
+      selected=[r,c];
+      validMoves=getValid(r,c,board,turn);
+      render();
+      return;
+    }
+    selected=null;validMoves=[];render();
+    return;
+  }
+
+  if(color(p)===turn){
+    selected=[r,c];
+    validMoves=getValid(r,c,board,turn);
+    render();
+  }
+}
+
+function checkEnd(){
+  if(wCount===0){endGame('NERO');return;}
+  if(bCount===0){endGame('BIANCO');return;}
+  // check if current player has moves
+  const caps=getAllCaps(board,turn);
+  if(caps.length>0)return;
+  let hasMoves=false;
+  outer:for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    if(color(board[r][c])===turn&&getMoves(r,c,board,turn).length>0){hasMoves=true;break outer;}
+  }
+  if(!hasMoves)endGame(turn==='w'?'NERO':'BIANCO');
+}
+
+function endGame(winner){
+  sndWin();
+  document.getElementById('go-title').textContent=winner+' VINCE!';
+  document.getElementById('gameover').style.display='flex';
+}
+
+window.addEventListener('resize',()=>{
+  if(document.getElementById('game').style.display==='flex'){
+    buildBoard();render();
+  }
+});
+</script>
+</body>
+</html>
