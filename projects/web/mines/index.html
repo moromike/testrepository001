@@ -2,13 +2,14 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes,maximum-scale=5.0">
 <title>CACCHE</title>
 <style>
 :root{--bg:#0e0800;--gold:#ffcc00;--wood:#5a3a00;--wood2:#3a2200}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace}
-#frame{width:min(98vw,calc(100dvh*.62));height:100dvh;background:var(--bg);border-left:12px solid var(--wood);border-right:12px solid var(--wood);border-top:8px solid var(--wood2);border-bottom:8px solid var(--wood2);display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
+#frame{width:min(98vw,calc(100dvh*.62));height:100dvh;background:var(--bg);border-left:12px solid var(--wood);border-right:12px solid var(--wood);border-top:8px solid var(--wood2);border-bottom:8px solid var(--wood2);display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden;transition:width .15s,border .15s}
+#frame.ingame{width:min(100vw,100dvh);border-left:4px solid var(--wood);border-right:4px solid var(--wood)}
 #frame::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.15) 3px,rgba(0,0,0,.15) 4px);pointer-events:none;z-index:100}
 .screen{display:none;flex-direction:column;align-items:center;width:100%;height:100%}
 .screen.active{display:flex}
@@ -30,7 +31,7 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 
 /* GAME */
 #game{justify-content:flex-start;padding:6px 0 4px;gap:0}
-.hud{display:flex;align-items:center;justify-content:space-between;width:96%;padding:2px 6px;flex-shrink:0;height:48px}
+.hud{display:flex;align-items:center;justify-content:space-between;width:98%;padding:2px 4px;flex-shrink:0;height:40px}
 .hud-cell{display:flex;align-items:center;gap:3px}
 .hud-icon{font-size:1.1rem;line-height:1}
 .hud-val{color:var(--gold);font-size:1.2rem;font-weight:900;min-width:2.2em;text-align:right}
@@ -52,7 +53,7 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .cell.n8{color:#888888}
 .cell.boom{background:#3a0500}
 .cell.wrong-flag{background:#1a0000}
-.hint-flag{color:#554400;font-size:.58rem;letter-spacing:.1em;flex-shrink:0;padding:2px 0}
+.hint-flag{display:none}
 
 /* GAMEOVER */
 #gameover{justify-content:center;gap:20px;padding:20px}
@@ -216,7 +217,7 @@ function fmtHud(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m.toSt
 
 // ── SCREENS ────────────────────────────────────────────────────────────────
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-function showSetup(){stopTimer();gameActive=false;renderSetupRec();showScreen('setup')}
+function showSetup(){stopTimer();gameActive=false;document.getElementById('frame').classList.remove('ingame');renderSetupRec();showScreen('setup')}
 function showRecords(){
   const c=document.getElementById('recContent'); c.innerHTML='';
   [1,2,3].forEach(d=>{
@@ -253,6 +254,7 @@ function startGame(){
   document.getElementById('flagBtn').classList.remove('on');
   document.getElementById('mineCount').textContent=totalMines;
   document.getElementById('timerDisplay').textContent='00:00';
+  document.getElementById('frame').classList.add('ingame');
   showScreen('game');
   initBoard(); buildGrid();
 }
@@ -279,10 +281,12 @@ function placeMines(sr,sc){
 function buildGrid(){
   const wrap=document.getElementById('grid-wrap'), grid=document.getElementById('grid');
   requestAnimationFrame(()=>{
-    const aw=wrap.clientWidth*.97, ah=wrap.clientHeight*.97;
-    const cs=Math.max(16,Math.min(Math.floor(aw/cols),Math.floor(ah/rows)));
+    const gap=1;
+    const aw=wrap.clientWidth*.995, ah=wrap.clientHeight*.995;
+    const cs=Math.max(16,Math.min(Math.floor((aw-(cols-1)*gap)/cols),Math.floor((ah-(rows-1)*gap)/rows)));
     const fs=Math.max(9,Math.floor(cs*.52));
     grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
+    grid.style.gap=gap+'px';
     grid.innerHTML='';
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
       const el=document.createElement('div');
