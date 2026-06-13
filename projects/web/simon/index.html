@@ -110,6 +110,11 @@
     <button class="mode-btn" id="mode-6" onclick="selMode(6)">6<small>COLORI</small></button>
     <button class="mode-btn" id="mode-8" onclick="selMode(8)">8<small>COLORI</small></button>
   </div>
+  <div class="mode-grid" style="margin-top:-0.3rem">
+    <button class="mode-btn" id="spd-1" onclick="selSpeed(1)">🐢<small>LENTO</small></button>
+    <button class="mode-btn" id="spd-2" onclick="selSpeed(2)">▶<small>NORMALE</small></button>
+    <button class="mode-btn" id="spd-3" onclick="selSpeed(3)">⚡<small>VELOCE</small></button>
+  </div>
   <div class="records-box">
     <div class="rec-title" id="rec-title">RECORD — 4 COLORI</div>
     <div class="rec-cols">
@@ -127,6 +132,7 @@
   <div class="game-title">SIMON</div>
   <div class="hud">
     <div class="hud-item"><span class="hud-label">LIVELLO</span><span class="hud-val" id="level-disp">—</span></div>
+    <div class="hud-item"><span class="hud-label">VELOCITÀ</span><span class="hud-val" id="speed-disp">▶</span></div>
     <div class="hud-item"><span class="hud-label">RECORD</span><span class="hud-val" id="best-disp">0</span></div>
   </div>
   <div id="canvas-wrap"><canvas id="gameCanvas"></canvas></div>
@@ -184,9 +190,18 @@ const OUTER_FRAC  = 0.91;
 const GAP_RAD     = 0.032;
 
 // ═══════════════════════════════════════════════
+// SPEED CONFIG
+// ═══════════════════════════════════════════════
+const SPEED_CFG = {
+  1: { baseFlash:640, basePause:400, stepFlash:65, stepPause:45, minFlash:200, minPause:100, icon:'🐢' },
+  2: { baseFlash:460, basePause:280, stepFlash:50, stepPause:35, minFlash:160, minPause: 80, icon:'▶'  },
+  3: { baseFlash:300, basePause:180, stepFlash:35, stepPause:25, minFlash:120, minPause: 60, icon:'⚡' },
+};
+
+// ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-let numColors = 4;
+let numColors = 4, speedLevel = 2;
 let sequence = [], playerIdx = 0, curLevel = 0;
 let accepting = false, animating = false;
 let litIdx = -1;   // currently lit sector (-1 = none)
@@ -233,6 +248,11 @@ function selMode(n){
   MODES.forEach(x=>document.getElementById('mode-'+x).classList.toggle('sel',x===n));
   renderRecords();
 }
+function selSpeed(s){
+  speedLevel=s;
+  [1,2,3].forEach(x=>document.getElementById('spd-'+x).classList.toggle('sel',x===s));
+  document.getElementById('speed-disp').textContent=SPEED_CFG[s].icon;
+}
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function backToSetup(){ killTimers(); accepting=false; animating=false; document.getElementById('overlay').classList.remove('show'); renderRecords(); showScreen('setup-screen'); }
 function killTimers(){ timers.forEach(clearTimeout); timers=[]; }
@@ -261,9 +281,9 @@ function nextRound(){
   after(600, playSequence);
 }
 
-// ─── timing: gets faster every 4 levels, floors at fast ───
-function flashMs(){ return Math.max(200, 620 - Math.floor(curLevel/4)*65); }
-function pauseMs(){ return Math.max(100, 380 - Math.floor(curLevel/4)*45); }
+// ─── timing: gets faster every 4 levels, floors at min ───
+function flashMs(){ const c=SPEED_CFG[speedLevel]; return Math.max(c.minFlash, c.baseFlash - Math.floor(curLevel/4)*c.stepFlash); }
+function pauseMs(){ const c=SPEED_CFG[speedLevel]; return Math.max(c.minPause, c.basePause - Math.floor(curLevel/4)*c.stepPause); }
 
 function playSequence(){
   animating=true; accepting=false;
@@ -454,6 +474,7 @@ function soundWrong(){
 // BOOT
 // ═══════════════════════════════════════════════
 selMode(4);
+selSpeed(2);
 </script>
 </body>
 </html>
