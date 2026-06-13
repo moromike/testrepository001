@@ -99,23 +99,26 @@
     }
     #gameCanvas { display:block; width:100%; height:100%; border-radius:clamp(3px,0.6vw,5px); touch-action:none; }
 
-    /* 4 direction buttons: ▲▼ left thumb, ◀▶ right thumb */
+    /* Controls: ▲▼ stacked vertically on left, ◀▶ side by side on right */
     .dpad-row {
-      display:flex; justify-content:space-between;
+      display:flex; justify-content:space-between; align-items:center;
       width: min(92vw, calc(100dvh - 200px));
       flex-shrink: 0;
-      gap: 0.5rem;
+      padding: 0 0.5rem;
     }
-    .dpad-group { display:flex; gap:0.4rem; flex:1; }
+    .dpad-vert  { display:flex; flex-direction:column; gap:0.35rem; }
+    .dpad-horiz { display:flex; flex-direction:row;    gap:0.35rem; }
     .dpad-btn {
-      flex:1; font-family:inherit;
-      font-size: clamp(1rem,4.5vw,1.6rem);
-      background:#1a0e00; border:2px solid var(--dim); border-radius:8px;
-      color:var(--dim); cursor:pointer;
-      padding: clamp(0.3em,1.5vw,0.6em) 0;
-      display:flex; align-items:center; justify-content:center;
+      width:  clamp(2.8rem,13vw,4rem);
+      height: clamp(2.8rem,13vw,4rem);
+      font-family:inherit; font-size: clamp(1.1rem,5vw,1.7rem);
+      background: rgba(90,58,0,0.35);
+      border: 1.5px solid rgba(255,204,0,0.35);
+      border-radius: 8px; color: rgba(255,204,0,0.7);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      -webkit-tap-highlight-color: transparent;
     }
-    .dpad-btn:active { color:var(--gold); border-color:var(--gold); background:#2a1400; }
+    .dpad-btn:active { background:rgba(255,204,0,0.2); border-color:var(--gold); color:var(--gold); }
 
     .ctrl-row {
       display:flex; gap:0.5rem; flex-shrink:0;
@@ -190,11 +193,11 @@
   </div>
   <div id="canvas-wrap"><canvas id="gameCanvas"></canvas></div>
   <div class="dpad-row">
-    <div class="dpad-group">
+    <div class="dpad-vert">
       <button class="dpad-btn" onpointerdown="inputDir(0,-1)">▲</button>
       <button class="dpad-btn" onpointerdown="inputDir(0,1)">▼</button>
     </div>
-    <div class="dpad-group">
+    <div class="dpad-horiz">
       <button class="dpad-btn" onpointerdown="inputDir(-1,0)">◀</button>
       <button class="dpad-btn" onpointerdown="inputDir(1,0)">▶</button>
     </div>
