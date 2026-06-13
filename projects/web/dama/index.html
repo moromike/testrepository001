@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
 :root{--bg:#0e0800;--gold:#ffcc00;--wood:#5a3a00}
-body{background:var(--bg);color:var(--gold);font-family:'Courier New',monospace;width:100%;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+body{background:var(--bg);color:var(--gold);font-family:'Courier New',monospace;width:100%;height:100dvh;overflow:hidden;display:flex;align-items:center;justify-content:center}
 
 /* SETUP */
 #setup{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;width:100%;height:100%}
@@ -19,7 +19,7 @@ body{background:var(--bg);color:var(--gold);font-family:'Courier New',monospace;
 .btn:hover,.btn:active{background:var(--gold);color:#000}
 
 /* GAME */
-#game{display:none;width:100%;height:100vh;flex-direction:row;align-items:stretch}
+#game{display:none;width:100%;height:100dvh;flex-direction:row;align-items:stretch}
 .strip{width:52px;min-width:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--bg);border:1px solid #2a1a00;position:relative}
 .strip-inner{display:flex;flex-direction:column;align-items:center;gap:8px}
 #strip-l .strip-inner{transform:rotate(-90deg)}
@@ -46,8 +46,8 @@ body{background:var(--bg);color:var(--gold);font-family:'Courier New',monospace;
 
 .piece{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0;position:relative;z-index:2;box-shadow:0 3px 8px rgba(0,0,0,.7);cursor:pointer;transition:transform .1s}
 .piece:active{transform:scale(.93)}
-.piece.white{background:radial-gradient(circle at 35% 35%,#fff8d0,#c8a020)}
-.piece.black{background:radial-gradient(circle at 35% 35%,#555,#111)}
+.piece.white{background:radial-gradient(circle at 35% 35%,#ffffff,#cccccc);box-shadow:0 3px 8px rgba(0,0,0,.6),inset 0 1px 2px #fff}
+.piece.black{background:radial-gradient(circle at 35% 35%,#222,#000);box-shadow:0 3px 8px rgba(0,0,0,.8),inset 0 1px 2px rgba(255,255,255,.08)}
 .piece.king{font-size:60%}
 
 /* GAMEOVER */
@@ -121,8 +121,9 @@ function isKing(p){return p===WK||p===BK;}
 function getCaps(r,c,brd,col){
   const dirs=[[-1,-1],[-1,1],[1,-1],[1,1]],res=[];
   const p=brd[r][c];
+  const fwd=col==='w'?-1:1;
   for(const[dr,dc]of dirs){
-    // Italian Dama: men capture in all 4 diagonal directions (kings too)
+    if(!isKing(p)&&dr!==fwd)continue; // men capture forward only
     const mr=r+dr,mc=c+dc,tr=r+2*dr,tc=c+2*dc;
     if(mr<0||mr>7||mc<0||mc>7||tr<0||tr>7||tc<0||tc>7)continue;
     const mid=brd[mr][mc];
