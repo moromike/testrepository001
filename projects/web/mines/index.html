@@ -42,7 +42,7 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 /* Scrollable grid container */
 #grid-wrap{flex:1;min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:flex-start}
 #grid{display:grid;gap:1px;flex-shrink:0;background:#000}
-.cell{background:#ffcc00;border:1px solid #000;border-radius:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;font-family:'Courier New',monospace;font-weight:900;color:#000}
+.cell{background:#ffcc00;border:1px solid #000;border-radius:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-family:'Courier New',monospace;font-weight:900;color:#000}
 .cell.revealed{background:#b89000;border-color:#000;cursor:default}
 .cell.n1{color:#0000cc}.cell.n2{color:#006600}.cell.n3{color:#cc0000}
 .cell.n4{color:#000099}.cell.n5{color:#880000}.cell.n6{color:#007777}
@@ -287,7 +287,7 @@ function buildGrid(){
   const byW=Math.floor((aw-(cols-1)*gap)/cols);
   const byH=Math.floor((ah-(rows-1)*gap)/rows);
   const cs=Math.max(MIN_CELL,Math.min(byW,byH));
-  const fs=Math.max(10,Math.floor(cs*.68));
+  const fs=Math.max(11,Math.floor(cs*.78));
 
   // Show scroll hint for Expert mode
   const totalW=cols*cs+(cols-1)*gap;
@@ -460,6 +460,8 @@ function neNext(){if(nePos<2){nePos++;updateNE()}else confirmName()}
 function confirmName(){const nm=neName.join('');const rec=rLoad(diff);insertRec(rec,pendingMs,nm);rSave(diff,rec);hideNameEntry()}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
+// Block browser long-press context menu so our flag long-press works
+document.getElementById('grid-wrap').addEventListener('contextmenu',e=>e.preventDefault());
 selDiff(2);
 </script>
 </body>
