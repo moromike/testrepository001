@@ -99,12 +99,14 @@
     }
     #gameCanvas { display:block; width:100%; height:100%; border-radius:clamp(3px,0.6vw,5px); touch-action:none; }
 
-    /* 4 direction buttons in a single row */
+    /* 4 direction buttons: ▲▼ left thumb, ◀▶ right thumb */
     .dpad-row {
-      display:flex; gap:0.4rem;
-      width: min(92vw, calc(100dvh - 200px)); /* same width as canvas */
+      display:flex; justify-content:space-between;
+      width: min(92vw, calc(100dvh - 200px));
       flex-shrink: 0;
+      gap: 0.5rem;
     }
+    .dpad-group { display:flex; gap:0.4rem; flex:1; }
     .dpad-btn {
       flex:1; font-family:inherit;
       font-size: clamp(1rem,4.5vw,1.6rem);
@@ -188,10 +190,14 @@
   </div>
   <div id="canvas-wrap"><canvas id="gameCanvas"></canvas></div>
   <div class="dpad-row">
-    <button class="dpad-btn" onpointerdown="inputDir(-1,0)">◀</button>
-    <button class="dpad-btn" onpointerdown="inputDir(0,-1)">▲</button>
-    <button class="dpad-btn" onpointerdown="inputDir(0,1)">▼</button>
-    <button class="dpad-btn" onpointerdown="inputDir(1,0)">▶</button>
+    <div class="dpad-group">
+      <button class="dpad-btn" onpointerdown="inputDir(0,-1)">▲</button>
+      <button class="dpad-btn" onpointerdown="inputDir(0,1)">▼</button>
+    </div>
+    <div class="dpad-group">
+      <button class="dpad-btn" onpointerdown="inputDir(-1,0)">◀</button>
+      <button class="dpad-btn" onpointerdown="inputDir(1,0)">▶</button>
+    </div>
   </div>
   <div class="ctrl-row">
     <button class="ctrl-btn" id="pause-btn" onclick="togglePause()">⏸ PAUSA</button>
