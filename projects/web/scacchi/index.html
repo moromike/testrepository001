@@ -184,7 +184,7 @@ function isOwn(p,col){return col==='w'?isWhite(p):isBlack(p);}
 function isEnemy(p,col){return col==='w'?isBlack(p):isWhite(p);}
 function pieceColor(p){if(!p)return null;return isWhite(p)?'w':'b';}
 function toUpper(p){return p?p.toUpperCase():null;}
-const GLYPHS={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+const GLYPHS={K:'♚',Q:'♛',R:'♜',B:'♝',N:'♞',P:'♟',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
 
 // ---- BOARD COPY ----
 function copyBoard(b){return b.map(r=>r.slice());}
