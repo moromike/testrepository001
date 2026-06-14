@@ -39,6 +39,8 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .hud-timer{color:var(--gold);font-size:1.15rem;font-weight:900;letter-spacing:.08em}
 .flag-toggle{background:#1a0d00;border:2px solid #4a3200;color:#886600;font-size:1.1rem;width:38px;height:38px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .flag-toggle.on{border-color:var(--gold);color:var(--gold);background:#2a1800;box-shadow:0 0 8px #ffcc0044}
+.hud-btn{background:#1a0d00;border:2px solid #4a3200;color:#886600;font-size:1rem;width:34px;height:34px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hud-btn.on{border-color:var(--gold);color:var(--gold);background:#2a1800;box-shadow:0 0 8px #ffcc0044}
 /* Scrollable grid container */
 #grid-wrap{flex:1;min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:flex-start}
 #grid{display:grid;gap:1px;flex-shrink:0;background:#000;border:3px solid var(--gold);box-sizing:content-box}
@@ -90,6 +92,7 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 
 <!-- SETUP -->
 <div id="setup" class="screen active">
+  <a href="../index.html" class="small-btn" style="align-self:flex-start;margin:6px 0 -4px 8px;font-size:.68rem;padding:5px 10px">◀ ARCADE</a>
   <div style="text-align:center">
     <div style="font-size:2.6rem;line-height:1">💩</div>
     <div class="title">CACCHE</div>
@@ -113,11 +116,13 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 <!-- GAME -->
 <div id="game" class="screen">
   <div class="hud">
+    <button class="hud-btn" onclick="goHome()">⌂</button>
     <div class="hud-cell">
       <span class="hud-icon">💩</span>
       <span class="hud-val" id="mineCount">0</span>
     </div>
     <span class="hud-timer" id="timerDisplay">00:00</span>
+    <button class="hud-btn" id="overviewBtn" onclick="toggleOverview()">⛶</button>
     <button class="flag-toggle" id="flagBtn" onclick="toggleFlagMode()">🚩</button>
   </div>
   <div id="grid-wrap"><div id="grid"></div></div>
@@ -183,6 +188,7 @@ let revealedCount=0,minesLeft=0;
 let timerIv=null,startTime=0;
 let pendingMs=0,nePos=0,neName=['A','A','A'];
 let longPressTimer=null,lastTouchMs=0;
+let overviewMode=false,normalCs=28;
 // touch state: track start position to distinguish tap vs scroll
 let ts=null; // {x,y,t,r,c}
 
@@ -214,6 +220,7 @@ function fmtHud(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m.toSt
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 function showSetup(){
   stopTimer();gameActive=false;
+  overviewMode=false;
   document.getElementById('frame').classList.remove('ingame');
   renderSetupRec();showScreen('setup');
 }
@@ -249,6 +256,7 @@ function startGame(){
   const cfg=CFGS[diff];
   rows=cfg.rows;cols=cfg.cols;totalMines=cfg.mines;
   firstClick=true;gameActive=false;flagMode=false;
+  overviewMode=false;
   revealedCount=0;minesLeft=totalMines;ts=null;
   document.getElementById('flagBtn').classList.remove('on');
   document.getElementById('mineCount').textContent=totalMines;
@@ -293,27 +301,9 @@ function buildGrid(){
   const cs=Math.max(MIN_CELL,Math.min(byW,byH));
   const fs=Math.max(11,Math.floor(cs*.78));
 
-  // Show scroll hint for Expert mode
-  const totalW=cols*cs+(cols-1)*gap;
-  const totalH=rows*cs+(rows-1)*gap;
-  const sh=document.getElementById('scrollHint');
-  const needsHScroll=totalW>aw+4,needsVScroll=totalH>ah+4;
-  function updateScrollHint(){
-    if(!needsHScroll&&!needsVScroll){sh.textContent='';return}
-    const wrap=document.getElementById('grid-wrap');
-    const hints=[];
-    if(needsHScroll){
-      const colW=(totalW)/cols;
-      const c0=Math.max(0,Math.floor(wrap.scrollLeft/colW));
-      const c1=Math.min(cols-1,Math.floor((wrap.scrollLeft+wrap.clientWidth-1)/colW));
-      hints.push(`← col ${c0+1}–${c1+1} / ${cols} →`);
-    }
-    if(needsVScroll)hints.push('↕ SCORRI');
-    sh.textContent=hints.join('  ');
-  }
   updateScrollHint();
-  document.getElementById('grid-wrap').addEventListener('scroll',updateScrollHint,{passive:true});
 
+  normalCs=cs;
   grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
   grid.style.gap=gap+'px';
   grid.innerHTML='';
@@ -329,6 +319,71 @@ function buildGrid(){
     grid.appendChild(el);
   }
   gameActive=true;
+}
+
+// ── SCROLL HINT & OVERVIEW ────────────────────────────────────────────────
+function updateScrollHint(){
+  if(!cols||!rows)return;
+  const sh=document.getElementById('scrollHint');
+  if(!sh)return;
+  if(overviewMode){sh.textContent='';return}
+  const wrap=document.getElementById('grid-wrap');
+  const gap=1;
+  const totalW=cols*normalCs+(cols-1)*gap;
+  const totalH=rows*normalCs+(rows-1)*gap;
+  const aw=wrap.clientWidth,ah=wrap.clientHeight;
+  const needsH=totalW>aw+4,needsV=totalH>ah+4;
+  if(!needsH&&!needsV){sh.textContent='';return}
+  const hints=[];
+  if(needsH){
+    const colW=totalW/cols;
+    const c0=Math.max(0,Math.floor(wrap.scrollLeft/colW));
+    const c1=Math.min(cols-1,Math.floor((wrap.scrollLeft+wrap.clientWidth-1)/colW));
+    hints.push(`← col ${c0+1}–${c1+1} / ${cols} →`);
+  }
+  if(needsV)hints.push('↕ SCORRI');
+  sh.textContent=hints.join('  ');
+}
+
+function goHome(){
+  flagMode=false;
+  document.getElementById('flagBtn').classList.remove('on');
+  showSetup();
+}
+
+function toggleOverview(){
+  if(!cols||!rows)return;
+  overviewMode=!overviewMode;
+  const wrap=document.getElementById('grid-wrap');
+  const grid=document.getElementById('grid');
+  const aw=wrap.clientWidth,ah=wrap.clientHeight;
+  const gap=1;
+  let cs,fs;
+  if(overviewMode){
+    cs=Math.max(2,Math.min(Math.floor((aw-(cols-1)*gap)/cols),Math.floor((ah-(rows-1)*gap)/rows)));
+    fs=Math.max(4,Math.floor(cs*.78));
+    wrap.scrollLeft=0;wrap.scrollTop=0;
+  }else{
+    cs=normalCs;fs=Math.max(11,Math.floor(cs*.78));
+  }
+  grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
+  grid.querySelectorAll('.cell').forEach(el=>{el.style.width=cs+'px';el.style.height=cs+'px';el.style.fontSize=fs+'px'});
+  document.getElementById('overviewBtn').classList.toggle('on',overviewMode);
+  updateScrollHint();
+}
+
+function exitOverviewAt(r,c){
+  overviewMode=false;
+  const wrap=document.getElementById('grid-wrap');
+  const grid=document.getElementById('grid');
+  const gap=1,cs=normalCs,fs=Math.max(11,Math.floor(cs*.78));
+  const aw=wrap.clientWidth,ah=wrap.clientHeight;
+  grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
+  grid.querySelectorAll('.cell').forEach(el=>{el.style.width=cs+'px';el.style.height=cs+'px';el.style.fontSize=fs+'px'});
+  wrap.scrollLeft=Math.max(0,c*(cs+gap)-(aw-cs)/2);
+  wrap.scrollTop=Math.max(0,r*(cs+gap)-(ah-cs)/2);
+  document.getElementById('overviewBtn').classList.remove('on');
+  updateScrollHint();
 }
 
 // ── CELL RENDER ────────────────────────────────────────────────────────────
@@ -354,6 +409,7 @@ function renderAll(){for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)renderCell(r,
 function onTS(e){
   const t=e.touches[0];
   ts={x:t.clientX,y:t.clientY,t:Date.now(),r:+this.dataset.r,c:+this.dataset.c,moved:false};
+  if(overviewMode)return; // no long press in overview
   longPressTimer=setTimeout(()=>{
     longPressTimer=null;
     if(ts&&!ts.moved&&gameActive){flagCell(ts.r,ts.c);ts=null}
@@ -370,6 +426,10 @@ function onTM(e){
 function onTE(e){
   lastTouchMs=Date.now();
   if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}
+  if(overviewMode){
+    if(ts&&!ts.moved){exitOverviewAt(ts.r,ts.c)}
+    ts=null;return;
+  }
   if(!ts||ts.moved||!gameActive){ts=null;return}
   const dt=Date.now()-ts.t;
   if(dt<300){ // short tap
@@ -380,6 +440,7 @@ function onTE(e){
 }
 function onCellClick(){
   if(Date.now()-lastTouchMs<400)return; // suppress after touch
+  if(overviewMode){exitOverviewAt(+this.dataset.r,+this.dataset.c);return}
   if(!gameActive)return;
   const r=+this.dataset.r,c=+this.dataset.c;
   if(flagMode)flagCell(r,c);else tapCell(r,c);
@@ -476,8 +537,8 @@ function neNext(){if(nePos<2){nePos++;updateNE()}else confirmName()}
 function confirmName(){const nm=neName.join('');const rec=rLoad(diff);insertRec(rec,pendingMs,nm);rSave(diff,rec);hideNameEntry()}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
-// Block browser long-press context menu so our flag long-press works
 document.getElementById('grid-wrap').addEventListener('contextmenu',e=>e.preventDefault());
+document.getElementById('grid-wrap').addEventListener('scroll',updateScrollHint,{passive:true});
 selDiff(2);
 </script>
 </body>
