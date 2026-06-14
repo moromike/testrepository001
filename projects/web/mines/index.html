@@ -41,7 +41,7 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .flag-toggle.on{border-color:var(--gold);color:var(--gold);background:#2a1800;box-shadow:0 0 8px #ffcc0044}
 /* Scrollable grid container */
 #grid-wrap{flex:1;min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:flex-start}
-#grid{display:grid;gap:1px;flex-shrink:0;background:#000}
+#grid{display:grid;gap:1px;flex-shrink:0;background:#000;border:3px solid var(--gold);box-sizing:content-box}
 .cell{background:#ffcc00;border:1px solid #000;border-radius:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-family:'Courier New',monospace;font-weight:900;color:#000}
 .cell.revealed{background:#b89000;border-color:#000;cursor:default}
 .cell.n1{color:#0000cc}.cell.n2{color:#006600}.cell.n3{color:#cc0000}
@@ -297,10 +297,22 @@ function buildGrid(){
   const totalW=cols*cs+(cols-1)*gap;
   const totalH=rows*cs+(rows-1)*gap;
   const sh=document.getElementById('scrollHint');
-  const hints=[];
-  if(totalW>aw+4)hints.push('← SCORRI →');
-  if(totalH>ah+4)hints.push('↕ SCORRI');
-  sh.textContent=hints.join('  ');
+  const needsHScroll=totalW>aw+4,needsVScroll=totalH>ah+4;
+  function updateScrollHint(){
+    if(!needsHScroll&&!needsVScroll){sh.textContent='';return}
+    const wrap=document.getElementById('grid-wrap');
+    const hints=[];
+    if(needsHScroll){
+      const colW=(totalW)/cols;
+      const c0=Math.max(0,Math.floor(wrap.scrollLeft/colW));
+      const c1=Math.min(cols-1,Math.floor((wrap.scrollLeft+wrap.clientWidth-1)/colW));
+      hints.push(`← col ${c0+1}–${c1+1} / ${cols} →`);
+    }
+    if(needsVScroll)hints.push('↕ SCORRI');
+    sh.textContent=hints.join('  ');
+  }
+  updateScrollHint();
+  document.getElementById('grid-wrap').addEventListener('scroll',updateScrollHint,{passive:true});
 
   grid.style.gridTemplateColumns=`repeat(${cols},${cs}px)`;
   grid.style.gap=gap+'px';
