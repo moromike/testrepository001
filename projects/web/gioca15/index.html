@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>GIOCA 15</title>
+  <style>
+    :root {
+      --bg:   #0e0800;
+      --gold: #ffcc00;
+      --dim:  #886611;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+    html, body { width: 100%; height: 100%; }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: var(--bg);
+      color: var(--gold);
+      min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: clamp(0.2rem,0.8dvh,0.6rem) clamp(0.3rem,1vw,0.8rem) clamp(0.3rem,1dvh,0.6rem);
+      user-select: none; overflow-x: hidden; overflow-y: auto;
+      background-image: repeating-linear-gradient(
+        0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 3px
+      );
+    }
+
+    .screen { display: none; width: 100%; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    /* ── SETUP ── */
+    .setup-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: clamp(0.5rem,1.5dvh,1.2rem); width: 100%; max-width: 500px;
+    }
+    .title {
+      font-size: clamp(2rem,10vw,4rem); font-weight: bold; letter-spacing: 0.28em;
+      text-shadow: 0 0 10px var(--gold), 0 0 28px var(--gold), 3px 3px 0 #4a2800;
+      line-height: 1; text-align: center;
+    }
+    .subtitle {
+      font-size: clamp(0.6rem,3vw,1rem); letter-spacing: 0.12em; color: var(--dim); text-align: center;
+    }
+    .size-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: clamp(0.4rem,1.5vw,0.8rem); width: 100%;
+    }
+    .size-btn {
+      font-family: inherit; font-weight: bold;
+      background: #1a0e00; border: 2px solid var(--dim); border-radius: 8px;
+      color: var(--dim); cursor: pointer; padding: 0.5em 0.2em;
+      font-size: clamp(0.55rem,2.2vw,0.82rem); letter-spacing: 0.04em;
+      line-height: 1.35; text-align: center; transition: all 0.15s;
+    }
+    .size-btn small { display: block; font-size: 0.82em; color: var(--dim); }
+    .size-btn.sel {
+      color: var(--gold); border-color: var(--gold); background: #2a1800;
+      box-shadow: 0 0 8px rgba(255,204,0,0.3);
+    }
+    .records-box {
+      width: 100%; border: 1px solid #3a2200; border-radius: 8px;
+      padding: clamp(0.5rem,1.5vw,1rem); background: rgba(20,10,0,0.6);
+    }
+    .rec-title {
+      font-size: clamp(0.55rem,2.2vw,0.8rem); letter-spacing: 0.18em; color: var(--dim);
+      text-align: center; margin-bottom: 0.5em;
+      border-bottom: 1px solid #3a2200; padding-bottom: 0.3em;
+    }
+    .rec-cols { display: flex; gap: 1rem; }
+    .rec-col { flex: 1; }
+    .rec-col-title {
+      font-size: clamp(0.5rem,2vw,0.7rem); color: var(--dim);
+      letter-spacing: 0.12em; margin-bottom: 0.3em; text-align: center;
+    }
+    .rec-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: clamp(0.5rem,2vw,0.72rem); padding: 0.15em 0;
+      border-bottom: 1px solid rgba(90,58,0,0.3);
+    }
+    .rec-rank { color: var(--dim); min-width: 1.5em; }
+    .rec-val { color: var(--gold); font-weight: bold; }
+    .rec-empty { color: #4a3200; font-size: 0.85em; text-align: center; padding: 0.3em 0; }
+    .play-btn {
+      font-family: inherit; font-weight: bold; letter-spacing: 0.2em;
+      font-size: clamp(1rem,5vw,1.6rem);
+      background: linear-gradient(180deg, #3a1800 0%, #1a0800 100%);
+      border: 2px solid var(--gold); border-radius: 10px;
+      color: var(--gold); cursor: pointer; padding: 0.5em 2em;
+      box-shadow: 0 0 12px rgba(255,204,0,0.4); width: 100%;
+    }
+    .play-btn:active { background: #2a1000; }
+
+    /* ── GAME ── */
+    .game-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      --bs: min(96vw, 80dvh);
+      gap: clamp(0.2rem,0.6dvh,0.5rem); width: 100%;
+    }
+    .hud {
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(96vw, calc(var(--bs) * 1.05));
+    }
+    .hud-item { display: flex; flex-direction: column; align-items: center; min-width: 5em; }
+    .hud-label { font-size: clamp(0.45rem,1.8vw,0.65rem); letter-spacing: 0.15em; color: var(--dim); }
+    .hud-val {
+      font-size: clamp(1rem,4vw,1.5rem); font-weight: bold;
+      text-shadow: 0 0 8px var(--gold); letter-spacing: 0.08em;
+    }
+    .reset-btn {
+      font-family: inherit; font-size: clamp(0.7rem,3vw,1rem);
+      background: none; border: 1.5px solid var(--dim); border-radius: 6px;
+      color: var(--dim); cursor: pointer; padding: 0.2em 0.5em; line-height: 1;
+    }
+    .reset-btn:active { color: var(--gold); border-color: var(--gold); }
+
+    /* ── GRID ── */
+    #puzzle-grid {
+      display: grid;
+      width: var(--bs); height: var(--bs);
+      gap: clamp(3px,0.5vw,6px);
+      background: #2a1800;
+      border: clamp(3px,0.8vw,7px) solid #5a3a00;
+      border-radius: clamp(6px,1.5vw,12px);
+      padding: clamp(3px,0.5vw,6px);
+      box-shadow: 0 0 20px rgba(90,58,0,0.8), inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    .tile {
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(145deg, #2a1500, #1a0c00);
+      border: 2.5px solid #8a5a10; border-radius: clamp(3px,0.7vw,7px);
+      font-weight: 900; color: var(--gold);
+      text-shadow: 0 0 8px rgba(255,204,0,0.7), 0 1px 2px rgba(0,0,0,0.9);
+      cursor: pointer; transition: transform 0.08s, background 0.08s;
+      box-shadow: inset 0 1px 0 rgba(255,204,0,0.15), 0 2px 4px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .tile::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(145deg, rgba(255,204,0,0.08) 0%, transparent 60%);
+      border-radius: inherit; pointer-events: none;
+    }
+    .tile:active:not(.empty) { transform: scale(0.93); background: #2a1800; }
+    .tile.empty {
+      background: #0a0600; border-color: #1a0e00;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.8); cursor: default;
+    }
+    .tile.empty::after { display: none; }
+    .tile.flash {
+      background: linear-gradient(145deg, #3a2000, #2a1200);
+      border-color: var(--gold);
+      box-shadow: 0 0 8px rgba(255,204,0,0.3), inset 0 1px 0 rgba(255,204,0,0.2);
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+      display: flex; flex-direction: column; align-items: center;
+      gap: clamp(0.3rem,1dvh,0.6rem); width: min(96vw, var(--bs));
+    }
+    .solve-btns { display: flex; gap: clamp(0.4rem,2vw,0.8rem); width: 100%; }
+    .ctrl-btn {
+      font-family: inherit; font-weight: bold; letter-spacing: 0.07em;
+      font-size: clamp(0.58rem,2.3vw,0.82rem);
+      background: #1a0e00; border: 1.5px solid var(--dim); border-radius: 8px;
+      color: var(--dim); cursor: pointer; padding: 0.45em 0.5em;
+      flex: 1; line-height: 1.2; text-align: center; transition: all 0.15s;
+    }
+    .ctrl-btn:active, .ctrl-btn.hi { color: var(--gold); border-color: var(--gold); background: #2a1400; }
+    .ctrl-btn:disabled { opacity: 0.35; cursor: default; }
+    .speed-row { display: flex; align-items: center; gap: 0.6em; width: 100%; }
+    .speed-label { font-size: clamp(0.5rem,2vw,0.7rem); color: var(--dim); letter-spacing: 0.1em; white-space: nowrap; }
+    .speed-btns { display: flex; gap: 0.4em; flex: 1; }
+    .speed-btn {
+      font-family: inherit; flex: 1; font-size: clamp(0.6rem,2.3vw,0.82rem);
+      background: #1a0e00; border: 1.5px solid var(--dim); border-radius: 6px;
+      color: var(--dim); cursor: pointer; padding: 0.3em 0.2em; text-align: center; transition: all 0.15s;
+    }
+    .speed-btn.sel { color: var(--gold); border-color: var(--gold); background: #2a1400; }
+    .solve-status {
+      font-size: clamp(0.5rem,2vw,0.72rem); color: var(--dim);
+      letter-spacing: 0.1em; text-align: center; min-height: 1.2em;
+    }
+
+    /* ── OVERLAY ── */
+    .overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.88);
+      flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+    }
+    .overlay.show { display: flex; }
+    .ov-icon { font-size: clamp(2.5rem,15vw,5rem); text-align: center; }
+    .ov-title {
+      font-size: clamp(1.5rem,8vw,3rem); font-weight: bold; letter-spacing: 0.2em;
+      text-shadow: 0 0 20px var(--gold), 0 0 40px var(--gold);
+      color: var(--gold); text-align: center;
+    }
+    .ov-stats { font-size: clamp(0.7rem,3vw,1rem); color: var(--dim); letter-spacing: 0.12em; text-align: center; line-height: 1.8; }
+    .ov-record { font-size: clamp(0.7rem,3vw,1rem); color: #ffaa00; letter-spacing: 0.12em; text-align: center; }
+    .ov-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .name-entry-label { font-size: clamp(0.55rem,2.2vw,0.82rem); letter-spacing: 0.18em; color: var(--dim); text-align: center; }
+    .name-input {
+      font-family: inherit; font-size: clamp(1.8rem,9vw,3rem); font-weight: 900;
+      letter-spacing: 0.5em; text-align: center; text-transform: uppercase;
+      background: #1a0c00; color: var(--gold);
+      border: 2.5px solid var(--gold); border-radius: 8px;
+      width: 4.2em; padding: 0.15em 0.2em; outline: none; caret-color: var(--gold);
+    }
+    .rec-name { color: #ffcc88; font-weight: 900; min-width: 2.4em; letter-spacing: 0.05em; font-size: 0.95em; }
+    .ov-btn {
+      font-family: inherit; font-weight: bold; letter-spacing: 0.15em;
+      font-size: clamp(0.8rem,3.5vw,1.2rem);
+      background: #1a0800; border: 2px solid var(--gold); border-radius: 10px;
+      color: var(--gold); cursor: pointer; padding: 0.5em 1.5em;
+      box-shadow: 0 0 10px rgba(255,204,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ SETUP ══ -->
+<div id="scr-setup" class="screen active">
+  <div class="setup-wrap">
+    <a href="../index.html" style="align-self:flex-start;font-size:.68rem;padding:4px 10px;background:#1a0d00;border:1px solid #4a3200;color:#886600;border-radius:5px;text-decoration:none;font-family:'Courier New',monospace;letter-spacing:.05em;margin:6px 0 0 8px">◀ ARCADE</a>
+    <div class="title">GIOCA 15</div>
+    <div class="subtitle">IL PUZZLE SCORREVOLE</div>
+    <div class="size-grid" id="size-grid"></div>
+    <div class="records-box">
+      <div class="rec-title" id="rec-title">RECORD — GIOCA 15 (4×4)</div>
+      <div class="rec-cols">
+        <div class="rec-col">
+          <div class="rec-col-title">⏱ TEMPO</div>
+          <div id="rec-time"></div>
+        </div>
+        <div class="rec-col">
+          <div class="rec-col-title">🎯 MOSSE</div>
+          <div id="rec-moves"></div>
+        </div>
+      </div>
+    </div>
+    <button class="play-btn" onclick="startGame()">▶ INIZIA</button>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="scr-game" class="screen">
+  <div class="game-wrap" id="game-wrap">
+    <div class="hud">
+      <div class="hud-item">
+        <span class="hud-label">TEMPO</span>
+        <span class="hud-val" id="timer-disp">00:00</span>
+      </div>
+      <button class="reset-btn" onclick="backToSetup()">⚙</button>
+      <div class="hud-item">
+        <span class="hud-label">MOSSE</span>
+        <span class="hud-val" id="moves-disp">0</span>
+      </div>
+    </div>
+    <div id="puzzle-grid"></div>
+    <div class="controls">
+      <div class="solve-btns" id="solve-btns"></div>
+      <div class="speed-row">
+        <span class="speed-label">VEL.</span>
+        <div class="speed-btns">
+          <button class="speed-btn" data-spd="0" onclick="setSpeed(0)">🐢 Lenta</button>
+          <button class="speed-btn sel" data-spd="1" onclick="setSpeed(1)">▶ Normale</button>
+          <button class="speed-btn" data-spd="2" onclick="setSpeed(2)">⚡ Veloce</button>
+        </div>
+      </div>
+      <div class="solve-status" id="solve-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NAME ENTRY OVERLAY ══ -->
+<div class="overlay" id="name-overlay">
+  <div class="ov-icon">🏆</div>
+  <div class="ov-title">RECORD!</div>
+  <div class="ov-stats" id="name-stats"></div>
+  <div class="name-entry-label">INSERISCI LE TUE INIZIALI (MAX 3)</div>
+  <input id="name-input" class="name-input" type="text" maxlength="3"
+         autocomplete="off" autocorrect="off" autocapitalize="characters"
+         spellcheck="false" placeholder="AAA"
+         oninput="this.value=this.value.toUpperCase()"
+         onkeydown="if(event.key==='Enter')confirmName()">
+  <div class="ov-btns">
+    <button class="ov-btn" onclick="confirmName()">✓ OK</button>
+  </div>
+</div>
+
+<!-- ══ WIN OVERLAY ══ -->
+<div class="overlay" id="overlay">
+  <div class="ov-icon" id="ov-icon">🏆</div>
+  <div class="ov-title" id="ov-title">RISOLTO!</div>
+  <div class="ov-stats" id="ov-stats"></div>
+  <div class="ov-record" id="ov-record"></div>
+  <div class="ov-btns">
+    <button class="ov-btn" onclick="restartGame()">↩ ANCORA</button>
+    <button class="ov-btn" onclick="backToSetup()">⚙ MENU</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const SIZES = [
+  { n:4,  name:'Gioca 15', shuffleMoves: 80  },
+  { n:5,  name:'Gioca 24', shuffleMoves:125  },
+  { n:6,  name:'Gioca 35', shuffleMoves:180  },
+  { n:7,  name:'Gioca 48', shuffleMoves:245  },
+  { n:8,  name:'Gioca 63', shuffleMoves:320  },
+  { n:9,  name:'Gioca 80', shuffleMoves:405  },
+  { n:10, name:'Gioca 99', shuffleMoves:500  },
+];
+const SPEEDS = [500, 150, 30]; // ms per step
+const DR = [-1, 1, 0, 0];
+const DC = [ 0, 0,-1, 1];
+const OPP= [ 1, 0, 3, 2]; // opposite direction index
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let curN = 4, curSizeIdx = 0;
+let board = [], moveCount = 0;
+let pendingElapsed = 0, pendingMoves = 0;
+let timerStart = 0, timerInterval = null, timerOffset = 0;
+let solving = false, solvePaused = false;
+let solveQueue = [], solveStepIdx = 0, solveTimer = null;
+let speedIdx = 1;
+let audioCtx = null;
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+(function boot() {
+  const sg = document.getElementById('size-grid');
+  SIZES.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'size-btn' + (i === 0 ? ' sel' : '');
+    btn.innerHTML = `${s.name}<small>${s.n}×${s.n}</small>`;
+    btn.onclick = () => selectSize(i);
+    sg.appendChild(btn);
+  });
+  renderRecords();
+})();
+
+function selectSize(idx) {
+  curSizeIdx = idx; curN = SIZES[idx].n;
+  document.querySelectorAll('.size-btn').forEach((b,i) => b.classList.toggle('sel', i===idx));
+  renderRecords();
+}
+
+// ═══════════════════════════════════════════════
+// SCREENS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function backToSetup() {
+  stopSolve(); stopTimer(); hideOverlay();
+  renderRecords(); showScreen('scr-setup');
+}
+
+// ═══════════════════════════════════════════════
+// RECORDS
+// ═══════════════════════════════════════════════
+function recKey(n) { return `g15_rec2_${n}`; }
+
+function loadRecords(n) {
+  try { return JSON.parse(localStorage.getItem(recKey(n))) || {time:[],moves:[]}; }
+  catch(e) { return {time:[],moves:[]}; }
+}
+
+function inTop3Time(rec, v)  { return rec.time.length  < 3 || v <= rec.time[rec.time.length-1].v;  }
+function inTop3Moves(rec, v) { return rec.moves.length < 3 || v <= rec.moves[rec.moves.length-1].v; }
+
+function saveRecord(n, timeMs, moves, name) {
+  const nm = name ? name.toUpperCase().slice(0,3).padEnd(3,'·') : '---';
+  const rec = loadRecords(n);
+  const isTimeRec  = inTop3Time(rec, timeMs);
+  const isMoveRec  = inTop3Moves(rec, moves);
+  if (isTimeRec)  { rec.time.push({v:timeMs, m:moves, n:nm});  rec.time.sort((a,b)=>a.v-b.v);  rec.time=rec.time.slice(0,3);  }
+  if (isMoveRec)  { rec.moves.push({v:moves, t:timeMs, n:nm}); rec.moves.sort((a,b)=>a.v-b.v); rec.moves=rec.moves.slice(0,3); }
+  localStorage.setItem(recKey(n), JSON.stringify(rec));
+  return {isTimeRec, isMoveRec};
+}
+
+function fmtTime(ms) {
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return `${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+function renderRecords() {
+  const s = SIZES[curSizeIdx];
+  document.getElementById('rec-title').textContent = `RECORD — ${s.name.toUpperCase()} (${s.n}×${s.n})`;
+  const rec = loadRecords(curN);
+  const tEl = document.getElementById('rec-time');
+  const mEl = document.getElementById('rec-moves');
+  tEl.innerHTML = ''; mEl.innerHTML = '';
+  const medals = ['🥇','🥈','🥉'];
+  if (!rec.time.length) tEl.innerHTML = '<div class="rec-empty">— nessun record —</div>';
+  else rec.time.forEach((r,i) => {
+    const d = document.createElement('div'); d.className = 'rec-row';
+    d.innerHTML = `<span class="rec-rank">${medals[i]}</span><span class="rec-name">${r.n||'---'}</span><span class="rec-val">${fmtTime(r.v)}</span><span style="color:var(--dim);font-size:.85em">${r.m}m</span>`;
+    tEl.appendChild(d);
+  });
+  if (!rec.moves.length) mEl.innerHTML = '<div class="rec-empty">— nessun record —</div>';
+  else rec.moves.forEach((r,i) => {
+    const d = document.createElement('div'); d.className = 'rec-row';
+    d.innerHTML = `<span class="rec-rank">${medals[i]}</span><span class="rec-name">${r.n||'---'}</span><span class="rec-val">${r.v} mos.</span><span style="color:var(--dim);font-size:.85em">${fmtTime(r.t)}</span>`;
+    mEl.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════
+function startTimer()  { timerStart=Date.now(); timerOffset=0; timerInterval=setInterval(tickTimer,500); }
+function stopTimer()   { clearInterval(timerInterval); timerInterval=null; }
+function pauseTimer()  { timerOffset+=Date.now()-timerStart; stopTimer(); }
+function resumeTimer() { timerStart=Date.now(); timerInterval=setInterval(tickTimer,500); }
+function getElapsedMs(){ return timerOffset+(timerInterval?Date.now()-timerStart:0); }
+function tickTimer()   { document.getElementById('timer-disp').textContent=fmtTime(getElapsedMs()); }
+
+// ═══════════════════════════════════════════════
+// PUZZLE CORE
+// ═══════════════════════════════════════════════
+function goalBoard(n) { const b=[]; for(let i=1;i<n*n;i++) b.push(i); b.push(0); return b; }
+
+function shuffleBoard(n, moves) {
+  const b = goalBoard(n);
+  let empty = n*n-1, lastD = -1;
+  for (let i=0; i<moves; i++) {
+    const r=Math.floor(empty/n), c=empty%n;
+    const valid=[];
+    if(r>0) valid.push(0); if(r<n-1) valid.push(1);
+    if(c>0) valid.push(2); if(c<n-1) valid.push(3);
+    const avail = valid.filter(d => d!==OPP[lastD]);
+    const d = (avail.length ? avail : valid)[Math.floor(Math.random()*(avail.length||valid.length))];
+    const ni = empty + DR[d]*n + DC[d];
+    b[empty]=b[ni]; b[ni]=0; lastD=d; empty=ni;
+  }
+  return b;
+}
+
+function isSolved(b) { for(let i=0;i<b.length-1;i++) if(b[i]!==i+1) return false; return b[b.length-1]===0; }
+function getEmpty(b)  { return b.indexOf(0); }
+
+function canMove(b, n, ti) {
+  const e=getEmpty(b), er=Math.floor(e/n), ec=e%n, tr=Math.floor(ti/n), tc=ti%n;
+  return (er===tr&&Math.abs(ec-tc)===1)||(ec===tc&&Math.abs(er-tr)===1);
+}
+
+function applyMove(b, ti) {
+  const nb=[...b], e=getEmpty(nb);
+  nb[e]=nb[ti]; nb[ti]=0; return nb;
+}
+
+// ═══════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════
+function buildGrid(n) {
+  const grid = document.getElementById('puzzle-grid');
+  grid.style.gridTemplateColumns = `repeat(${n},1fr)`;
+  grid.innerHTML = '';
+  const fs = n<=4?'1.8rem':n<=6?'1.2rem':n<=8?'0.9rem':'0.7rem';
+  for (let i=0; i<n*n; i++) {
+    const t = document.createElement('div');
+    t.className = 'tile';
+    t.style.fontSize = `clamp(0.45rem,calc(var(--bs)/${n*3.5}),${fs})`;
+    t.dataset.idx = i;
+    t.onclick = () => handleTileClick(i);
+    grid.appendChild(t);
+  }
+}
+
+function renderBoard() {
+  document.querySelectorAll('.tile').forEach((t,i) => {
+    const v = board[i];
+    t.className = 'tile' + (v===0?' empty':'');
+    t.textContent = v===0 ? '' : String(v);
+  });
+}
+
+function flashTile(idx) {
+  const t = document.querySelector(`.tile[data-idx="${idx}"]`);
+  if (!t) return;
+  t.classList.add('flash');
+  setTimeout(()=>t.classList.remove('flash'), 160);
+}
+
+// ═══════════════════════════════════════════════
+// GAME FLOW
+// ═══════════════════════════════════════════════
+function startGame() {
+  getAC(); stopSolve(); stopTimer(); hideOverlay();
+  const s = SIZES[curSizeIdx];
+  curN = s.n;
+  board = shuffleBoard(curN, s.shuffleMoves);
+  moveCount = 0;
+
+  const gw = document.getElementById('game-wrap');
+  const bsVal = curN<=4 ? 'min(96vw,82dvh)' : curN<=6 ? 'min(96vw,86dvh)' : 'min(92vw,90dvh)';
+  gw.style.setProperty('--bs', bsVal);
+
+  buildGrid(curN);
+  renderBoard();
+  document.getElementById('moves-disp').textContent = '0';
+  document.getElementById('timer-disp').textContent = '00:00';
+
+  // Solve buttons
+  const sb = document.getElementById('solve-btns');
+  sb.innerHTML = '';
+  if (curN === 4) {
+    addBtn(sb, '🎯 IDA* (ottim.)', () => startSolveIDA());
+    addBtn(sb, '📋 Riga×Riga', () => startSolveRBR());
+  } else {
+    addBtn(sb, '📋 Risolvi auto', () => startSolveRBR());
+  }
+
+  setStatus('');
+  showScreen('scr-game');
+  startTimer();
+}
+
+function addBtn(parent, label, fn) {
+  const b = document.createElement('button');
+  b.className = 'ctrl-btn'; b.textContent = label; b.onclick = fn;
+  parent.appendChild(b);
+}
+
+function restartGame() { hideOverlay(); startGame(); }
+
+function handleTileClick(idx) {
+  if (solving || board[idx]===0) return;
+  if (!canMove(board, curN, idx)) return;
+  getAC();
+  board = applyMove(board, idx);
+  moveCount++;
+  document.getElementById('moves-disp').textContent = moveCount;
+  renderBoard(); soundMove();
+  if (isSolved(board)) {
+    const elapsed = getElapsedMs();
+    stopTimer();
+    const preRec = loadRecords(curN);
+    if (inTop3Time(preRec, elapsed) || inTop3Moves(preRec, moveCount)) {
+      setTimeout(()=>showNameEntry(elapsed, moveCount), 200);
+    } else {
+      const rec = saveRecord(curN, elapsed, moveCount, null);
+      setTimeout(()=>showWin(elapsed, moveCount, rec, false), 200);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// NAME ENTRY
+// ═══════════════════════════════════════════════
+function showNameEntry(elapsed, moves) {
+  pendingElapsed = elapsed; pendingMoves = moves;
+  document.getElementById('name-stats').innerHTML = `Tempo: ${fmtTime(elapsed)}&nbsp;&nbsp;Mosse: ${moves}`;
+  const inp = document.getElementById('name-input');
+  inp.value = '';
+  document.getElementById('name-overlay').classList.add('show');
+  setTimeout(()=>inp.focus(), 80);
+}
+
+function confirmName() {
+  const name = document.getElementById('name-input').value.trim() || '---';
+  document.getElementById('name-overlay').classList.remove('show');
+  const rec = saveRecord(curN, pendingElapsed, pendingMoves, name);
+  renderRecords();
+  setTimeout(()=>showWin(pendingElapsed, pendingMoves, rec, false), 80);
+}
+
+// ═══════════════════════════════════════════════
+// WIN
+// ═══════════════════════════════════════════════
+function showWin(elapsed, moves, rec, auto) {
+  soundWin();
+  document.getElementById('ov-icon').textContent = auto ? '🤖' : '🏆';
+  document.getElementById('ov-title').textContent = auto ? 'AUTO-RISOLTO!' : 'RISOLTO!';
+  document.getElementById('ov-stats').innerHTML = `Tempo: ${fmtTime(elapsed)}<br>Mosse: ${moves}`;
+  const lines = [];
+  if (!auto && rec) {
+    if (rec.isTimeRec) lines.push('🥇 Nuovo record di TEMPO!');
+    if (rec.isMoveRec) lines.push('🥇 Nuovo record di MOSSE!');
+  }
+  document.getElementById('ov-record').textContent = lines.join('  ');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function hideOverlay() { document.getElementById('overlay').classList.remove('show'); }
+function setStatus(t)  { document.getElementById('solve-status').textContent = t; }
+
+// ═══════════════════════════════════════════════
+// SPEED
+// ═══════════════════════════════════════════════
+function setSpeed(idx) {
+  speedIdx = idx;
+  document.querySelectorAll('.speed-btn').forEach((b,i)=>b.classList.toggle('sel',i===idx));
+  if (solving && !solvePaused) { clearTimeout(solveTimer); scheduleStep(); }
+}
+
+// ═══════════════════════════════════════════════
+// AUTO-SOLVE RUNNER
+// ═══════════════════════════════════════════════
+function startSolveMoves(moves, label) {
+  if (!moves || !moves.length) { setStatus('Già risolto!'); return; }
+  solving=true; solvePaused=false;
+  solveQueue=moves; solveStepIdx=0;
+  pauseTimer();
+  setStatus(`${label} · ${moves.length} mosse`);
+  setSolvingUI(true);
+  scheduleStep();
+}
+
+function scheduleStep() {
+  if (!solving || solvePaused) return;
+  solveTimer = setTimeout(doStep, SPEEDS[speedIdx]);
+}
+
+function doStep() {
+  if (!solving || solvePaused) return;
+  if (solveStepIdx >= solveQueue.length) { finishSolve(); return; }
+  const ti = solveQueue[solveStepIdx++];
+  board = applyMove(board, ti);
+  moveCount++;
+  document.getElementById('moves-disp').textContent = moveCount;
+  renderBoard();
+  flashTile(getEmpty(board));
+  soundMove();
+  scheduleStep();
+}
+
+function finishSolve() {
+  solving = false;
+  setSolvingUI(false);
+  const elapsed = getElapsedMs();
+  stopTimer();
+  setStatus('Risolto!');
+  setTimeout(()=>showWin(elapsed, moveCount, null, true), 300);
+}
+
+function stopSolve() {
+  solving=false; solvePaused=false;
+  clearTimeout(solveTimer);
+  setSolvingUI(false);
+  setStatus('');
+}
+
+function togglePause() {
+  if (!solving) return;
+  solvePaused = !solvePaused;
+  const pb = document.getElementById('pause-btn');
+  if (pb) pb.textContent = solvePaused ? '▶ Riprendi' : '⏸ Pausa';
+  if (pb) pb.classList.toggle('hi', solvePaused);
+  if (!solvePaused) scheduleStep();
+}
+
+function setSolvingUI(on) {
+  document.getElementById('solve-btns').querySelectorAll('button').forEach(b=>b.disabled=on);
+  const old1 = document.getElementById('pause-btn');
+  const old2 = document.getElementById('stop-btn');
+  if (on && !old1) {
+    const pb = document.createElement('button');
+    pb.className='ctrl-btn'; pb.id='pause-btn'; pb.textContent='⏸ Pausa'; pb.onclick=togglePause;
+    const sb = document.createElement('button');
+    sb.className='ctrl-btn'; sb.id='stop-btn'; sb.textContent='⏹ Stop'; sb.onclick=stopSolve;
+    const ctrl = document.querySelector('.controls');
+    const srow = ctrl.querySelector('.speed-row');
+    const row = document.createElement('div');
+    row.className='solve-btns'; row.id='pause-row';
+    row.appendChild(pb); row.appendChild(sb);
+    ctrl.insertBefore(row, srow);
+  } else if (!on) {
+    const pr = document.getElementById('pause-row');
+    if (pr) pr.remove();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// IDA* (4×4 only)
+// ═══════════════════════════════════════════════
+function manhattan4(b) {
+  let h=0;
+  for (let i=0;i<16;i++) {
+    const v=b[i]; if(!v) continue;
+    const gi=v-1;
+    h+=Math.abs(Math.floor(gi/4)-Math.floor(i/4))+Math.abs(gi%4-i%4);
+  }
+  return h;
+}
+
+function linConflict4(b) {
+  let lc=0;
+  for (let r=0;r<4;r++) {
+    for (let c1=0;c1<3;c1++) {
+      const v1=b[r*4+c1]; if(!v1) continue;
+      const gr1=Math.floor((v1-1)/4); if(gr1!==r) continue;
+      for (let c2=c1+1;c2<4;c2++) {
+        const v2=b[r*4+c2]; if(!v2) continue;
+        if(Math.floor((v2-1)/4)!==r) continue;
+        if((v1-1)%4>(v2-1)%4) lc+=2;
+      }
+    }
+  }
+  for (let c=0;c<4;c++) {
+    for (let r1=0;r1<3;r1++) {
+      const v1=b[r1*4+c]; if(!v1) continue;
+      const gc1=(v1-1)%4; if(gc1!==c) continue;
+      for (let r2=r1+1;r2<4;r2++) {
+        const v2=b[r2*4+c]; if(!v2) continue;
+        if((v2-1)%4!==c) continue;
+        if(Math.floor((v1-1)/4)>Math.floor((v2-1)/4)) lc+=2;
+      }
+    }
+  }
+  return lc;
+}
+
+function h4(b) { return manhattan4(b)+linConflict4(b); }
+
+function startSolveIDA() {
+  if (isSolved(board)) { setStatus('Già risolto!'); return; }
+  setStatus('⏳ IDA* in calcolo...');
+  setSolvingUI(true);
+  setTimeout(()=>{
+    const moves = runIDA([...board]);
+    if (!moves) { setStatus('IDA* non conv. — usa Riga×Riga'); setSolvingUI(false); return; }
+    startSolveMoves(moves, '🎯 IDA*');
+  }, 30);
+}
+
+function runIDA(b) {
+  let bound = h4(b);
+  const path = [];
+  for (let iter=0; iter<100; iter++) {
+    const res = dfsBound(b, 0, bound, -1, path);
+    if (res === 0) return [...path];
+    if (res === Infinity) return null;
+    bound = res;
+  }
+  return null;
+}
+
+function dfsBound(b, g, bound, lastDir, path) {
+  const hv = h4(b);
+  const f = g + hv;
+  if (f > bound) return f;
+  if (hv === 0) return 0;
+  let minF = Infinity;
+  const e = b.indexOf(0);
+  const er = Math.floor(e/4), ec = e%4;
+  for (let d=0; d<4; d++) {
+    if (lastDir!==-1 && d===OPP[lastDir]) continue;
+    const nr=er+DR[d], nc=ec+DC[d];
+    if (nr<0||nr>=4||nc<0||nc>=4) continue;
+    const ni=nr*4+nc;
+    b[e]=b[ni]; b[ni]=0;
+    path.push(ni);
+    const res = dfsBound(b, g+1, bound, d, path);
+    if (res===0) return 0;
+    if (res<minF) minF=res;
+    path.pop();
+    b[ni]=b[e]; b[e]=0;
+  }
+  return minF;
+}
+
+// ═══════════════════════════════════════════════
+// ROW-BY-ROW SOLVER
+// ═══════════════════════════════════════════════
+function startSolveRBR() {
+  if (isSolved(board)) { setStatus('Già risolto!'); return; }
+  setStatus('⏳ Calcolo soluzione...');
+  setSolvingUI(true);
+  setTimeout(()=>{
+    const moves = solveRowByRow([...board], curN);
+    if (!moves) { setStatus('Errore calcolo'); setSolvingUI(false); return; }
+    startSolveMoves(moves, '📋 Riga×Riga');
+  }, 30);
+}
+
+// BFS: find path for empty from `from` to `to`, avoiding forbidden positions.
+// Returns array of tile indices to slide (each tile slides into the empty spot).
+function bfsEmpty(n, from, to, forbidden) {
+  if (from===to) return [];
+  const vis = new Uint8Array(n*n); vis[from]=1;
+  const queue = [{pos:from, path:[]}];
+  let head=0;
+  while (head<queue.length) {
+    const {pos,path} = queue[head++];
+    const r=Math.floor(pos/n), c=pos%n;
+    for (let d=0;d<4;d++) {
+      const nr=r+DR[d], nc=c+DC[d];
+      if (nr<0||nr>=n||nc<0||nc>=n) continue;
+      const np=nr*n+nc;
+      if (vis[np]||forbidden[np]) continue;
+      const np2=[...path,np];
+      if (np===to) return np2;
+      vis[np]=1;
+      queue.push({pos:np, path:np2});
+    }
+  }
+  return null;
+}
+
+// Apply array of slide moves to board in-place, appending to outMoves.
+function applySlides(b, slides, outMoves) {
+  for (const ti of slides) {
+    const e=b.indexOf(0); b[e]=b[ti]; b[ti]=0; if(outMoves) outMoves.push(ti);
+  }
+}
+
+// Move tile with value `val` to `goalPos` using (tilePos, emptyPos) BFS.
+// Avoids fixed positions. Returns true if solved.
+function moveTile(b, n, val, goalPos, fixedMask, outMoves) {
+  const tp0 = b.indexOf(val);
+  if (tp0 === goalPos) return true;
+  const ep0 = b.indexOf(0);
+  const NN = n*n;
+
+  // State: tp*NN + ep. BFS to find shortest move sequence.
+  const prev    = new Int32Array(NN*NN).fill(-2); // -2=unvisited, -1=start
+  const moveTo  = new Int32Array(NN*NN).fill(-1); // the tile-pos slid to reach state
+  const startKey = tp0*NN + ep0;
+  prev[startKey] = -1;
+
+  const queue = [tp0*NN + ep0];
+  let head = 0, foundKey = -1;
+
+  outer: while (head < queue.length) {
+    const key = queue[head++];
+    const tp = (key / NN) | 0, ep = key % NN;
+    const er = (ep / n) | 0, ec = ep % n;
+
+    for (let d = 0; d < 4; d++) {
+      const nr = er+DR[d], nc = ec+DC[d];
+      if (nr<0||nr>=n||nc<0||nc>=n) continue;
+      const np = nr*n+nc;
+      if (fixedMask[np]) continue;
+
+      // Moving empty to np: tile at np slides to ep
+      const newTp = (np===tp) ? ep : tp;
+      const newEp = (np===tp) ? tp : np;
+      const nk = newTp*NN + newEp;
+      if (prev[nk] !== -2) continue;
+
+      prev[nk] = key;
+      moveTo[nk] = np; // tile that slid (from np to ep)
+
+      if (newTp === goalPos) { foundKey = nk; break outer; }
+      queue.push(nk);
+    }
+  }
+
+  if (foundKey === -1) return false;
+
+  // Reconstruct move sequence
+  const path = [];
+  let k = foundKey;
+  while (k !== startKey) { path.unshift(moveTo[k]); k = prev[k]; }
+
+  applySlides(b, path, outMoves);
+  return true;
+}
+
+// Solve using BFS on a small set of free positions (≤ ~12 tiles).
+function solveFinal(b, n, fixedMask, outMoves) {
+  const free=[];
+  for (let i=0;i<n*n;i++) if(!fixedMask[i]) free.push(i);
+  if (!free.length) return;
+  const key=arr=>free.map(p=>arr[p]).join(',');
+  const gk=free.map(p=>p<n*n-1?p+1:0).join(',');
+  if (key(b)===gk) return;
+  const seen=new Map([[key(b),[]]]);
+  const q=[[...b]];
+  let head=0;
+  while (head<q.length) {
+    const s=q[head++];
+    const e=s.indexOf(0), er=Math.floor(e/n), ec=e%n;
+    for (let d=0;d<4;d++) {
+      const nr=er+DR[d], nc=ec+DC[d];
+      if(nr<0||nr>=n||nc<0||nc>=n) continue;
+      const ni=nr*n+nc;
+      if(fixedMask[ni]) continue;
+      const ns=[...s]; ns[e]=ns[ni]; ns[ni]=0;
+      const k=key(ns);
+      if(seen.has(k)) continue;
+      const ppath=[...seen.get(key(s)),ni];
+      if(k===gk){ applySlides(b,ppath,outMoves); return; }
+      seen.set(k,ppath);
+      q.push(ns);
+    }
+  }
+}
+
+// 3-tile BFS: place tiles v0→g0 and v1→g1 simultaneously.
+// State = (posV0, posV1, emptyPos); other tiles move freely.
+function place2tiles(b, n, g0, g1, v0, v1, fixedMask, outMoves) {
+  const NN = n * n;
+  const p0 = b.indexOf(v0), p1 = b.indexOf(v1), pe = b.indexOf(0);
+  if (p0 === g0 && p1 === g1) return true;
+
+  const startKey = p0 * NN * NN + p1 * NN + pe;
+  const prev = new Map([[startKey, -1]]);
+  const moveTo = new Map();
+  const queue = [startKey];
+  let head = 0, foundKey = -1;
+
+  outer: while (head < queue.length) {
+    const key = queue[head++];
+    const pa  = Math.floor(key / (NN * NN));
+    const pb  = Math.floor((key % (NN * NN)) / NN);
+    const ep  = key % NN;
+    const er  = Math.floor(ep / n), ec = ep % n;
+
+    for (let d = 0; d < 4; d++) {
+      const nr = er + DR[d], nc = ec + DC[d];
+      if (nr < 0 || nr >= n || nc < 0 || nc >= n) continue;
+      const np = nr * n + nc;
+      if (fixedMask[np]) continue;
+
+      const newPa = (np === pa) ? ep : pa;
+      const newPb = (np === pb) ? ep : pb;
+      const nk = newPa * NN * NN + newPb * NN + np;
+      if (prev.has(nk)) continue;
+      prev.set(nk, key);
+      moveTo.set(nk, np);
+      if (newPa === g0 && newPb === g1) { foundKey = nk; break outer; }
+      queue.push(nk);
+    }
+  }
+
+  if (foundKey === -1) return false;
+  const path = [];
+  for (let k = foundKey; k !== startKey; k = prev.get(k)) path.unshift(moveTo.get(k));
+  applySlides(b, path, outMoves);
+  return true;
+}
+
+function solveRowByRow(b, n) {
+  const out=[], fixed=new Uint8Array(n*n);
+
+  for (let ring=0; ring<n; ring++) {
+    const innerN = n - ring;
+    if (innerN<=0) break;
+
+    if (innerN<=2) {
+      solveFinal(b, n, fixed, out);
+      break;
+    }
+
+    // ── Top row: row `ring`, cols `ring` to `n-1` ──
+    const rowR=ring, colL=ring, colR=n-1;
+
+    for (let col=colL; col<=colR-2; col++) {
+      const gp=rowR*n+col, val=gp+1;
+      if (b.indexOf(val)!==gp) moveTile(b,n,val,gp,fixed,out);
+      fixed[gp]=1;
+    }
+
+    // Place last 2 in row with 3-tile BFS
+    {
+      const g0=rowR*n+(colR-1), g1=rowR*n+colR;
+      place2tiles(b, n, g0, g1, g0+1, g1+1, fixed, out);
+      fixed[g0]=1; fixed[g1]=1;
+    }
+
+    // ── Left col: col `ring`, rows `ring+1` to `n-1` ──
+    const colC=ring, rowT=ring+1, rowB=n-1;
+    const nCol=rowB-rowT+1;
+
+    if (nCol===0) continue;
+
+    if (nCol===1) {
+      const gp=rowT*n+colC, val=gp+1;
+      if (b.indexOf(val)!==gp) moveTile(b,n,val,gp,fixed,out);
+      fixed[gp]=1;
+    } else {
+      for (let row=rowT; row<=rowB-2; row++) {
+        const gp=row*n+colC, val=gp+1;
+        if (b.indexOf(val)!==gp) moveTile(b,n,val,gp,fixed,out);
+        fixed[gp]=1;
+      }
+
+      // Place last 2 in column with 3-tile BFS
+      {
+        const gc0=(rowB-1)*n+colC, gc1=rowB*n+colC;
+        place2tiles(b, n, gc0, gc1, gc0+1, gc1+1, fixed, out);
+        fixed[gc0]=1; fixed[gc1]=1;
+      }
+    }
+  }
+
+  return out;
+}
+
+// ═══════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════
+function getAC() {
+  if (!audioCtx) try { audioCtx=new(window.AudioContext||window.webkitAudioContext)(); } catch(e){}
+  if (audioCtx&&audioCtx.state==='suspended') audioCtx.resume();
+}
+
+function beep(freq, dur, type='square', vol=0.07) {
+  if (!audioCtx) return;
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.connect(g); g.connect(audioCtx.destination);
+  o.type=type; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+  o.start(); o.stop(audioCtx.currentTime+dur);
+}
+
+function soundMove() { beep(220, 0.055, 'square', 0.055); }
+function soundWin()  {
+  if (!audioCtx) return;
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.22,'square',0.09),i*110));
+}
+</script>
+</body>
+</html>

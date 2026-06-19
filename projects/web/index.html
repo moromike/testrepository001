@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ARCADE">
+<meta name="theme-color" content="#0e0800">
+<title>ARCADE</title>
+<style>
+:root{--bg:#0e0800;--gold:#ffcc00;--wood:#5a3a00;--wood2:#3a2200}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100dvh;background:#2a1500;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace}
+#frame{
+  width:min(98vw,calc(100dvh*.62));min-height:100dvh;
+  background:var(--bg);
+  border-left:12px solid var(--wood);border-right:12px solid var(--wood);
+  border-top:8px solid var(--wood2);border-bottom:8px solid var(--wood2);
+  display:flex;flex-direction:column;align-items:center;
+  position:relative;overflow:hidden;
+}
+#frame::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.15) 3px,rgba(0,0,0,.15) 4px);pointer-events:none;z-index:100}
+.header{padding:24px 16px 10px;text-align:center;flex-shrink:0}
+.logo{font-size:2rem;line-height:1;margin-bottom:6px;filter:drop-shadow(0 0 10px #ffcc0066)}
+.title{font-size:clamp(2.2rem,11vw,3.8rem);color:var(--gold);text-shadow:0 0 24px #ffcc0088;letter-spacing:.28em;font-weight:900}
+.subtitle{color:#886600;font-size:.68rem;letter-spacing:.22em;margin-top:5px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:92%;padding:8px 0;flex-shrink:0}
+.card{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#160900;border:2px solid #3a2200;border-radius:12px;
+  padding:16px 10px 13px;text-decoration:none;gap:7px;
+  position:relative;overflow:hidden;
+}
+.card:active{background:#2a1800;border-color:var(--gold);transform:scale(.95)}
+.card-glow{position:absolute;inset:0;border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,204,0,.1);pointer-events:none}
+.icon{font-size:clamp(2rem,9vw,3rem);line-height:1;filter:drop-shadow(0 0 6px rgba(255,204,0,.25))}
+.name{color:var(--gold);font-size:clamp(.68rem,3vw,.85rem);font-weight:900;letter-spacing:.14em;text-align:center}
+.desc{color:#664400;font-size:clamp(.48rem,2vw,.6rem);letter-spacing:.07em;text-align:center;line-height:1.5}
+.card.soon{opacity:.28;pointer-events:none;border-style:dashed;border-color:#2a1500}
+.card.soon .name{color:#3a2200}
+.footer{color:#2a1800;font-size:.52rem;letter-spacing:.18em;padding:16px 0 10px;margin-top:auto}
+</style>
+</head>
+<body>
+<div id="frame">
+
+  <div class="header">
+    <div class="logo">🕹️</div>
+    <div class="title">ARCADE</div>
+    <div class="subtitle">TAP PER GIOCARE</div>
+  </div>
+
+  <div class="grid">
+
+    <a class="card" href="gioca15/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🔢</div>
+      <div class="name">GIOCA 15</div>
+    </a>
+
+    <a class="card" href="snake/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🐍</div>
+      <div class="name">SNAKE</div>
+    </a>
+
+    <a class="card" href="simon/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🎵</div>
+      <div class="name">SIMON</div>
+    </a>
+
+    <a class="card" href="swipe/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">👆</div>
+      <div class="name">SWIPE</div>
+    </a>
+
+    <a class="card" href="mines/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">💩</div>
+      <div class="name">CACCHE</div>
+    </a>
+
+    <a class="card" href="tris/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">❌</div>
+      <div class="name">TRIS</div>
+    </a>
+
+    <a class="card" href="forza4/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🔴</div>
+      <div class="name">FORZA 4</div>
+    </a>
+
+    <a class="card" href="mastermind/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🎯</div>
+      <div class="name">MASTERMIND</div>
+    </a>
+
+    <a class="card" href="cosa-bevo-stasera/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🍹</div>
+      <div class="name">COSA BEVO</div>
+    </a>
+
+    <a class="card" href="dama/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">🎭</div>
+      <div class="name">DAMA</div>
+    </a>
+
+    <a class="card" href="scacchi/index.html">
+      <div class="card-glow"></div>
+      <div class="icon">♟</div>
+      <div class="name">SCACCHI</div>
+    </a>
+
+    <div class="card soon">
+      <div class="icon" style="font-size:1.8rem;opacity:.4">＋</div>
+      <div class="name">IN ARRIVO</div>
+    </div>
+
+  </div>
+
+  <div class="footer">MOROMIKE ARCADE · 2026</div>
+
+</div>
+</body>
+</html>
