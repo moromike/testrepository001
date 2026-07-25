@@ -379,10 +379,13 @@ const ctx=cv.getContext('2d');
 const P={};           /* geometria calcolata in layout() */
 let dpr=1;
 
+/* ritorna false se l'area di gioco non e' ancora misurabile (es. dentro un
+   iframe che si sta ancora dimensionando): in quel caso non si puo'
+   calcolare niente e non si deve disegnare */
 function layout(){
   const wrap=document.getElementById('pitch-wrap');
   const W=wrap.clientWidth,H=wrap.clientHeight;
-  if(W<10||H<10)return;
+  if(W<10||H<10)return false;
   const old=P.w?{x0:P.x0,y0:P.y0,w:P.w,h:P.h}:null;
   dpr=Math.min(window.devicePixelRatio||1,2);
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
@@ -424,6 +427,7 @@ function layout(){
     }
     placeStaticBodies();
   }
+  return true;
 }
 window.addEventListener('resize',()=>{layout()});
 if(window.ResizeObserver){
@@ -463,12 +467,20 @@ function mkBody(o){
   return Object.assign({x:0,y:0,vx:0,vy:0,r:P.R,m:3,type:'piece',team:null,gk:false,idx:0},o);
 }
 
+let layoutTries=0;
 function startMatch(){
   ac();
   matchId++;clearTimers();
   lastT=0;acc=0;
   showScreen('game');
-  layout();
+  if(!layout()){
+    /* il contenitore non ha ancora dimensioni utili: riprova al frame dopo
+       invece di costruire la partita su una geometria vuota */
+    const id=matchId;
+    if(++layoutTries<60)return requestAnimationFrame(()=>{if(id===matchId)startMatch()});
+    layoutTries=0;return showScreen('setup');
+  }
+  layoutTries=0;
   M={
     score:{r:0,b:0},turn:'r',combo:0,phase:'wait',
     pieces:[],ball:null,keepers:{},posts:[],
@@ -973,6 +985,7 @@ let lastT=0,acc=0;
 function loop(ts){
   rafId=requestAnimationFrame(loop);
   if(!M)return;
+  if(!P.w){layout();if(!P.w)return}   /* niente geometria: niente da disegnare */
   /* passo fisso ancorato al tempo reale: senza questo la simulazione
      girerebbe a velocita' diversa a seconda del refresh dello schermo */
   if(!lastT)lastT=ts||0;
