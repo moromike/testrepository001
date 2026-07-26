@@ -497,9 +497,10 @@ let M=null;            /* match */
 let matchId=0;         /* invalida i timer di partite chiuse */
 let rafId=0;
 const timers=[];
+let seq=0;              /* invalida i callback rimasti indietro */
 function later(fn,ms){
-  const id=matchId;
-  const t=setTimeout(()=>{if(id===matchId)fn()},ms);
+  const id=matchId,s=seq;
+  const t=setTimeout(()=>{if(id===matchId&&s===seq)fn()},ms);
   timers.push(t);return t;
 }
 function clearTimers(){while(timers.length)clearTimeout(timers.pop())}
@@ -694,7 +695,7 @@ function skipMoves(){
   nextMove();
 }
 function beginMoveSim(piece){
-  M.phase='movesim';
+  seq++;M.phase='movesim';
   M.flick=null;M.ballEvent=null;M.simTime=0;
   document.getElementById('mprompt').classList.remove('active');
   updateHud();
@@ -785,21 +786,22 @@ function predictBall(p,ux,uy,v0){
   const b=M.ball,s=p.r+b.r;
   const ex=b.x-p.x,ey=b.y-p.y;
   const proj=ex*ux+ey*uy;
-  if(proj<=0)return null;
+  if(proj<=0)return {hit:false,why:'wide'};
   const perp2=(ex*ex+ey*ey)-proj*proj;
-  if(perp2>s*s)return null;                 /* la pedina manca la palla */
+  if(perp2>s*s)return {hit:false,why:'wide'};   /* la pedina passa a lato */
   const t=proj-Math.sqrt(s*s-perp2);        /* corsa fino al contatto */
   const vImp=v0-3.6*t;                      /* velocita' all'impatto */
-  if(t<0||vImp<=0)return null;              /* non ci arriva */
+  if(t<0)return {hit:false,why:'wide'};
+  if(vImp<=0)return {hit:false,why:'short'};    /* si ferma prima */
   const cx=p.x+ux*t,cy=p.y+uy*t;
   const dx=b.x-cx,dy=b.y-cy,d=Math.hypot(dx,dy)||1;
   const nx=dx/d,ny=dy/d;
   const vn=vImp*(ux*nx+uy*ny);              /* componente normale */
-  if(vn<=0)return null;
+  if(vn<=0)return {hit:false,why:'wide'};
   /* 1.425 = impulso pedina(m=3)->palla(m=1); la palla si ferma sotto
      minSpeed, quindi la corsa e' (v-minSpeed)/k, non v/k */
   const vBall=vn*1.425;
-  return {nx:nx,ny:ny,len:Math.max(0,(vBall-P.minSpeed)/3.3)};
+  return {hit:true,nx:nx,ny:ny,len:Math.max(0,(vBall-P.minSpeed)/3.3)};
 }
 
 function moveKeeper(x){
@@ -812,7 +814,7 @@ function moveKeeper(x){
    SIMULAZIONE FISICA
    ============================================================ */
 function beginSim(piece){
-  M.phase='sim';
+  seq++;M.phase='sim';
   M.flick={piece:piece,team:piece.team,touched:false,foul:false,
            legal:inAttZone(piece.team,piece)};
   M.ballEvent=null;
@@ -847,10 +849,12 @@ function stepPhysics(dt){
   /* bordi */
   for(const b of M.pieces){
     if(b.gk)continue;
-    if(b.x<P.x0+b.r){b.x=P.x0+b.r;b.vx=Math.abs(b.vx)*0.35}
-    if(b.x>P.x1-b.r){b.x=P.x1-b.r;b.vx=-Math.abs(b.vx)*0.35}
-    if(b.y<P.y0+b.r){b.y=P.y0+b.r;b.vy=Math.abs(b.vy)*0.35}
-    if(b.y>P.y1-b.r){b.y=P.y1-b.r;b.vy=-Math.abs(b.vy)*0.35}
+    /* rimbalzo piu' vivo: con 0.35 le pedine morivano sulla linea e il bordo
+       diventava una trappola (misurato: da 0.8 a 3.0 pedine su 10 a ridosso) */
+    if(b.x<P.x0+b.r){b.x=P.x0+b.r;b.vx=Math.abs(b.vx)*0.6}
+    if(b.x>P.x1-b.r){b.x=P.x1-b.r;b.vx=-Math.abs(b.vx)*0.6}
+    if(b.y<P.y0+b.r){b.y=P.y0+b.r;b.vy=Math.abs(b.vy)*0.6}
+    if(b.y>P.y1-b.r){b.y=P.y1-b.r;b.vy=-Math.abs(b.vy)*0.6}
   }
   /* sponda sui laterali: la palla rimbalza invece di uscire (niente rimesse) */
   if(withBall&&!M.ballEvent){
@@ -1081,7 +1085,7 @@ function separate(except){
 /* scioglie gli ammassi: pedine sovrapposte spinte via e staccate dal bordo,
    altrimenti si incolonnano sulla linea e si tolgono la strada a vicenda */
 function relax(){
-  const edge=P.R*1.15;
+  const edge=P.R*1.7;   /* le pedine non restano appoggiate alla linea */
   for(let it=0;it<10;it++){
     let moved=false;
     for(let i=0;i<M.pieces.length;i++)for(let j=i+1;j<M.pieces.length;j++){
@@ -1109,8 +1113,14 @@ function relax(){
 function settleBoard(){
   if(!M.ballEvent){
     const b=M.ball;
-    b.x=Math.max(P.x0+P.band,Math.min(P.x1-P.band,b.x));
-    b.y=Math.max(P.y0+P.band,Math.min(P.y1-P.band,b.y));
+    const nx=Math.max(P.x0+P.band,Math.min(P.x1-P.band,b.x));
+    const ny=Math.max(P.y0+P.band,Math.min(P.y1-P.band,b.y));
+    if(nx!==b.x||ny!==b.y){
+      /* la palla viene spostata: senza mostrarlo sembra che si muova da sola */
+      M.snap={x0:b.x,y0:b.y,x1:nx,y1:ny,t:performance.now()};
+      tone(520,'triangle',0.09,0.05,0,320);
+      b.x=nx;b.y=ny;
+    }
   }
   relax();
 }
@@ -1173,6 +1183,7 @@ function draw(){
   drawGoals();
   for(const p of M.pieces)drawPiece(p);
   drawBall();
+  drawSnap();
   if(M.drag)drawAim();
   if(M.phase==='keeper')drawKeeperGuide();
 }
@@ -1213,6 +1224,14 @@ function drawPitch(){
     .forEach(([x,y,a0])=>{
       ctx.beginPath();ctx.arc(x,y,ca,a0,a0+Math.PI/2);ctx.stroke();
     });
+  /* fascia in cui la palla non puo' fermarsi: segnata, se no gli spostamenti
+     della palla sembrano arbitrari */
+  ctx.save();
+  ctx.setLineDash([2,7]);
+  ctx.strokeStyle='rgba(255,255,255,.22)';
+  ctx.lineWidth=1;
+  ctx.strokeRect(P.x0+P.band,P.y0+P.band,P.w-2*P.band,P.h-2*P.band);
+  ctx.restore();
   /* linee zona di tiro */
   ctx.save();
   ctx.setLineDash([6,6]);
@@ -1298,6 +1317,21 @@ function drawBall(){
   ctx.restore();
 }
 
+/* scia che mostra da dove la palla e' stata riportata dentro */
+function drawSnap(){
+  const s=M.snap;if(!s)return;
+  const k=1-(performance.now()-s.t)/900;
+  if(k<=0){M.snap=null;return}
+  ctx.save();
+  ctx.globalAlpha=k;
+  ctx.setLineDash([3,4]);ctx.lineWidth=2;
+  ctx.strokeStyle='rgba(255,255,255,.8)';
+  ctx.beginPath();ctx.moveTo(s.x0,s.y0);ctx.lineTo(s.x1,s.y1);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(s.x0,s.y0,P.br*(1+(1-k)),0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+}
+
 function drawAim(){
   const d=M.drag,p=d.piece;
   let dx=d.sx-d.x,dy=d.sy-d.y;
@@ -1307,11 +1341,15 @@ function drawAim(){
   const ux=dx/len,uy=dy/len;
   /* la freccia mostra quanto correra' davvero la pedina */
   const L=Math.max(P.R*1.2,flickSpeed(power)/3.6);
+  /* la pedina prendera' la palla con questa mira? il cono utile e' stretto
+     (D*sin(a) < R+br) e senza dirlo si manca la palla di continuo */
+  const pb=(M.phase==='aim')?predictBall(p,ux,uy,flickSpeed(power)):null;
+  const miss=pb&&!pb.hit;
   ctx.save();
   /* linea di mira */
   ctx.setLineDash([7,6]);
   ctx.lineWidth=Math.max(2,P.R*0.18);
-  ctx.strokeStyle=power>0.85?'#ff5533':'rgba(255,204,0,.9)';
+  ctx.strokeStyle=miss?'rgba(150,150,150,.75)':(power>0.85?'#ff5533':'rgba(255,204,0,.9)');
   ctx.beginPath();ctx.moveTo(p.x+ux*p.r,p.y+uy*p.r);
   ctx.lineTo(p.x+ux*(p.r+L),p.y+uy*(p.r+L));ctx.stroke();
   ctx.setLineDash([]);
@@ -1323,7 +1361,7 @@ function drawAim(){
   ctx.lineTo(tx+Math.cos(a+2.5)*hs,ty+Math.sin(a+2.5)*hs);
   ctx.lineTo(tx+Math.cos(a-2.5)*hs,ty+Math.sin(a-2.5)*hs);
   ctx.closePath();
-  ctx.fillStyle=power>0.85?'#ff5533':'rgba(255,204,0,.9)';ctx.fill();
+  ctx.fillStyle=miss?'rgba(150,150,150,.75)':(power>0.85?'#ff5533':'rgba(255,204,0,.9)');ctx.fill();
   /* arco di potenza attorno alla pedina */
   ctx.beginPath();
   ctx.arc(p.x,p.y,p.r*1.55,-Math.PI/2,-Math.PI/2+Math.PI*2*power);
@@ -1333,9 +1371,18 @@ function drawAim(){
   /* elastico */
   ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.35)';
   ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(d.x,d.y);ctx.stroke();
+  /* mira che non prende la palla: croce sulla palla, cosi' il cono si impara */
+  if(miss){
+    const b=M.ball,q=b.r*1.15;
+    ctx.setLineDash([]);ctx.lineWidth=Math.max(2,b.r*0.30);
+    ctx.strokeStyle=pb.why==='short'?'rgba(255,180,60,.95)':'rgba(255,90,70,.95)';
+    ctx.beginPath();
+    ctx.moveTo(b.x-q,b.y-q);ctx.lineTo(b.x+q,b.y+q);
+    ctx.moveTo(b.x+q,b.y-q);ctx.lineTo(b.x-q,b.y+q);
+    ctx.stroke();
+  }
   /* traiettoria prevista della palla (opzionale, spenta di default) */
-  const pb=(cfg.aimline&&M.phase==='aim')?predictBall(p,ux,uy,flickSpeed(power)):null;
-  if(pb){
+  if(cfg.aimline&&pb&&pb.hit){
     const b=M.ball;
     const ex=b.x+pb.nx*pb.len,ey=b.y+pb.ny*pb.len;
     ctx.setLineDash([4,5]);ctx.lineWidth=Math.max(1.5,P.br*0.28);
