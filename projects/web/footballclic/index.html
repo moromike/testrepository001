@@ -66,8 +66,8 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
 .ov-msg.flip{transform:rotate(180deg)}
 .ov-msg.sub{font-size:.6rem;font-weight:400;letter-spacing:.08em}
 
-#kprompt{position:absolute;inset:0;display:none;z-index:30;pointer-events:none}
-#kprompt.active{display:block}
+#kprompt,#mprompt{position:absolute;inset:0;display:none;z-index:30;pointer-events:none}
+#kprompt.active,#mprompt.active{display:block}
 /* il box non deve mai coprire la linea di porta, altrimenti intercetta
    il drag del portiere: e' posizionato via JS fuori dall'area di rigore
    e solo il bottone riceve i tap */
@@ -146,6 +146,22 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
     </div>
   </div>
 
+  <div class="opt">
+    <div class="opt-label">SPOSTAMENTI SENZA PALLA</div>
+    <div class="opt-row">
+      <button class="opt-btn sel" data-opt="moves" data-val="all">TUTTE LE<br>INTERRUZIONI</button>
+      <button class="opt-btn" data-opt="moves" data-val="corner">SOLO ANGOLO<br>E RINVIO</button>
+    </div>
+  </div>
+
+  <div class="opt">
+    <div class="opt-label">LINEA DELLA PALLA</div>
+    <div class="opt-row">
+      <button class="opt-btn sel" data-opt="aimline" data-val="0">NO<br>MIRI A OCCHIO</button>
+      <button class="opt-btn" data-opt="aimline" data-val="1">SI<br>TRAIETTORIA</button>
+    </div>
+  </div>
+
   <button class="play-btn" onclick="startMatch()">▶ GIOCA</button>
 
   <table class="rec-table"><tbody id="stats-body"></tbody></table>
@@ -162,8 +178,19 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
   <div class="rule-p">
     Trascina <b>indietro</b> da una tua pedina e rilascia: parte nella direzione opposta, con forza pari alla lunghezza del trascinamento.<br>
     Se la pedina che hai schicchiato <b>tocca la palla</b>, continui tu. Se la manchi, tocca all'avversario.<br>
-    La linea bianca tratteggiata mostra <b>dove andra' la palla</b>: colpirla di striscio la devia molto piu' di quanto sembri.<br>
-    Nel setup puoi limitare le schicchere di fila a 3, come nel regolamento FISCT.
+    Colpire la palla di striscio la devia molto piu' di quanto sembri: nel setup puoi accendere la <b>linea della palla</b>, che mostra dove finira'.<br>
+    Sempre nel setup puoi limitare le schicchere di fila a 3, come nel regolamento FISCT.
+  </div>
+  <div class="rule-h">SPONDA E FASCIA</div>
+  <div class="rule-p">
+    Sui lati lunghi la palla <b>rimbalza</b>: niente rimesse laterali.<br>
+    La palla non puo' <b>fermarsi</b> a ridosso di un bordo: se ci resta viene riportata dentro quel tanto che basta a farci stare una pedina dietro. Senza, l'azione si impianta li'.
+  </div>
+  <div class="rule-h">SPOSTAMENTI SENZA PALLA</div>
+  <div class="rule-p">
+    Al <b>calcio d'inizio</b> chi batte ha 3 spostamenti e chi difende 1: schicchi una pedina dove vuoi, la palla in quella fase non si tocca.<br>
+    Su angolo e rinvio ne hai <b>1 a testa</b> (e sulle altre interruzioni, se l'opzione e' su TUTTE): prima chi batte, poi chi difende.<br>
+    Con SALTA rinunci a quelli che ti restano.
   </div>
   <div class="rule-h">FALLI</div>
   <div class="rule-p">
@@ -184,10 +211,10 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
   <div class="rule-p">
     Versione semplificata: se la palla si ferma nella zona di tiro avversaria e l'attacco ha <b>piu' di 2 pedine</b> in quella zona, e' fuorigioco. Punizione sul limite.
   </div>
-  <div class="rule-h">RIMESSE</div>
+  <div class="rule-h">RIPRESE DI GIOCO</div>
   <div class="rule-p">
-    Palla fuori di lato: <b>rimessa</b> all'avversario di chi l'ha toccata per ultimo.<br>
-    Fuori sul fondo: <b>angolo</b> se l'ha toccata la difesa, <b>rinvio</b> se l'ha toccata l'attacco.
+    Palla sul fondo: <b>angolo</b> se l'ha toccata la difesa, <b>rinvio</b> se l'ha toccata l'attacco.<br>
+    In ogni ripresa la pedina piu' vicina viene messa <b>dietro la palla</b>, dal lato giusto: batti sempre verso il campo, mai verso la tua porta.
   </div>
   <button class="small-btn gold" style="margin:6px 0 14px" onclick="showScreen('setup')">◀ INDIETRO</button>
 </div>
@@ -220,6 +247,14 @@ html,body{height:100dvh;overflow:hidden;background:#2a1500;display:flex;align-it
         <div class="kinner">
           <div class="ktxt" id="ktxt">PIAZZA IL PORTIERE</div>
           <button class="kbtn" onclick="keeperReady()">PRONTO ▶</button>
+        </div>
+      </div>
+    </div>
+    <div id="mprompt">
+      <div class="kbox" id="mbox">
+        <div class="kinner">
+          <div class="ktxt" id="mtxt">SPOSTAMENTI</div>
+          <button class="kbtn" onclick="skipMoves()">SALTA ▶</button>
         </div>
       </div>
     </div>
@@ -330,7 +365,7 @@ function sndOut(){tone(420,'square',0.10,0.08,0);tone(300,'square',0.14,0.08,0.1
 /* ============================================================
    CONFIG + STATISTICHE
    ============================================================ */
-const cfg={squad:6,target:3,gk:'man',off:true,maxflick:0};
+const cfg={squad:6,target:3,gk:'man',off:true,maxflick:0,moves:'all',aimline:false};
 const SKEY='footballclic_stats';
 function statsLoad(){
   try{
@@ -366,7 +401,9 @@ document.querySelectorAll('.opt-btn').forEach(b=>{
     document.querySelectorAll('.opt-btn[data-opt="'+opt+'"]').forEach(o=>o.classList.remove('sel'));
     b.classList.add('sel');
     const v=b.dataset.val;
-    cfg[opt]=(opt==='gk')?v:(opt==='off'?v==='1':parseInt(v,10));
+    if(opt==='gk'||opt==='moves')cfg[opt]=v;
+    else if(opt==='off'||opt==='aimline')cfg[opt]=v==='1';
+    else cfg[opt]=parseInt(v,10);
     ac();
   });
 });
@@ -409,6 +446,10 @@ function layout(){
   P.gaW=pw*0.34;P.gaH=ph*0.055;                  /* area piccola */
   P.kLine=ph*0.045;                              /* distanza portiere da linea */
   P.kRange=P.gw*0.5+P.R*1.2;                     /* escursione portiere */
+  /* fascia lungo i bordi in cui la palla non puo' FERMARSI: sotto questa
+     distanza non c'e' spazio per mettere una pedina dietro la palla e
+     l'azione si blocca (2 raggi pedina + raggio palla, misurato) */
+  P.band=2*P.R+P.br;
   P.maxDrag=ph*0.20;
   P.maxSpeed=ph*1.9;
   P.minSpeed=ph*0.028;
@@ -485,7 +526,7 @@ function startMatch(){
     score:{r:0,b:0},turn:'r',combo:0,phase:'wait',
     pieces:[],ball:null,keepers:{},posts:[],
     lastTouch:null,shotLegal:false,
-    drag:null,kdrag:false,
+    drag:null,kdrag:false,moveQueue:[],afterMoves:null,
     bestCombo:0,goals:0,simTime:0,
     ballEvent:null
   };
@@ -499,6 +540,7 @@ function stopMatch(){
   M=null;
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('kprompt').classList.remove('active');
+  document.getElementById('mprompt').classList.remove('active');
   document.getElementById('confirm').classList.remove('active');
 }
 function quitMatch(){showScreen('setup')}
@@ -554,7 +596,10 @@ function kickoff(team,first){
   M.ball.x=P.cx;M.ball.y=P.cy;M.ball.vx=0;M.ball.vy=0;
   M.turn=team;M.combo=0;M.lastTouch=null;M.shotLegal=false;
   updateHud();
-  banner(first?'CALCIO D\'INIZIO':'CALCIO D\'INIZIO',teamName(team)+' BATTE',team,first?900:1200,()=>nextTurn());
+  /* senza spostamenti si parte tutti dietro la palla e non c'e' nessuno
+     avanti a cui passarla: chi batte ne ha 3, chi difende 1 */
+  banner('CALCIO D\'INIZIO',teamName(team)+' BATTE',team,first?900:1200,
+         ()=>startMoves([{team:team,n:3},{team:other(team),n:1}],()=>nextTurn()));
 }
 
 /* ============================================================
@@ -564,14 +609,16 @@ function updateHud(){
   if(!M)return;
   document.getElementById('score-r').textContent=M.score.r;
   document.getElementById('score-b').textContent=M.score.b;
-  const active=M.phase==='aim'||M.phase==='keeper';
-  /* in fase portiere tocca al difensore, non a chi ha il turno */
-  const actor=M.phase==='keeper'?other(M.turn):M.turn;
+  const active=M.phase==='aim'||M.phase==='keeper'||M.phase==='move';
+  /* in fase portiere tocca al difensore, negli spostamenti a chi e' in coda */
+  const actor=M.phase==='keeper'?other(M.turn)
+             :(M.phase==='move'&&M.moveQueue.length?M.moveQueue[0].team:M.turn);
   ['r','b'].forEach(t=>{
     const on=active&&actor===t;
     const el=document.getElementById('turn-'+t);
     el.classList.toggle('on',on);
-    el.textContent=on?(M.phase==='keeper'?'PORTIERE!':'TIRA TU'):'ATTENDI';
+    el.textContent=on?(M.phase==='keeper'?'PORTIERE!'
+                      :(M.phase==='move'?'SPOSTA '+M.moveQueue[0].n:'TIRA TU')):'ATTENDI';
     document.getElementById('combo-'+t).textContent=(M.turn===t&&M.combo>0)?('SCHICCHERE: '+M.combo):'';
   });
 }
@@ -614,6 +661,45 @@ function nextTurn(){
   }
   M.phase='aim';updateHud();
 }
+/* ---- spostamenti senza palla ---- */
+function startMoves(queue,then){
+  M.moveQueue=queue.filter(q=>q.n>0);
+  M.afterMoves=then;
+  nextMove();
+}
+function nextMove(){
+  if(!M)return;
+  while(M.moveQueue.length&&M.moveQueue[0].n<=0)M.moveQueue.shift();
+  if(!M.moveQueue.length){
+    const f=M.afterMoves;M.afterMoves=null;
+    document.getElementById('mprompt').classList.remove('active');
+    return f?f():nextTurn();
+  }
+  const q=M.moveQueue[0];
+  M.phase='move';
+  const box=document.getElementById('mbox');
+  box.className='kbox '+(q.team==='b'?'top':'bottom');
+  if(q.team==='b'){box.style.top=(P.y0+P.h*0.20)+'px';box.style.bottom='auto'}
+  else{box.style.bottom=(P.H-P.y1+P.h*0.20)+'px';box.style.top='auto'}
+  document.getElementById('mtxt').innerHTML=
+    'SPOSTAMENTI '+teamName(q.team)+' · '+q.n+
+    '<br>SCHICCHERA UNA PEDINA, LA PALLA NON SI TOCCA';
+  document.getElementById('mprompt').classList.add('active');
+  updateHud();
+}
+function skipMoves(){
+  if(!M||M.phase!=='move')return;
+  M.moveQueue.shift();
+  tone(660,'square',0.05,0.06,0);
+  nextMove();
+}
+function beginMoveSim(piece){
+  M.phase='movesim';
+  M.flick=null;M.ballEvent=null;M.simTime=0;
+  document.getElementById('mprompt').classList.remove('active');
+  updateHud();
+}
+
 function keeperReady(){
   if(!M||M.phase!=='keeper')return;
   document.getElementById('kprompt').classList.remove('active');
@@ -643,11 +729,13 @@ cv.addEventListener('pointerdown',e=>{
     moveKeeper(p.x);
     e.preventDefault();return;
   }
-  if(M.phase!=='aim')return;
-  /* pedina piu' vicina del team di turno (portiere escluso) */
+  const moving=M.phase==='move';
+  if(M.phase!=='aim'&&!moving)return;
+  const side=moving?M.moveQueue[0].team:M.turn;
+  /* pedina piu' vicina del team che gioca (portiere escluso) */
   let best=null,bd=1e9;
   for(const b of M.pieces){
-    if(b.team!==M.turn||b.gk)continue;
+    if(b.team!==side||b.gk)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y);
     if(d<bd){bd=d;best=b}
   }
@@ -679,7 +767,7 @@ function endDrag(e){
   const sp=flickSpeed(power);
   d.piece.vx=dx/len*sp;d.piece.vy=dy/len*sp;
   sndFlick(power);
-  beginSim(d.piece);
+  if(M.phase==='move')beginMoveSim(d.piece);else beginSim(d.piece);
 }
 cv.addEventListener('pointerup',endDrag);
 cv.addEventListener('pointercancel',e=>{if(M){M.drag=null;M.kdrag=false}});
@@ -734,7 +822,10 @@ function beginSim(piece){
 
 const DT=1/240;
 function stepPhysics(dt){
-  const bodies=M.pieces.concat([M.ball]);
+  /* negli spostamenti senza palla la palla e' fuori dal gioco: non si puo'
+     toccare nemmeno per sbaglio */
+  const withBall=M.phase!=='movesim';
+  const bodies=withBall?M.pieces.concat([M.ball]):M.pieces;
   /* integrazione + attrito */
   for(const b of bodies){
     if(b.gk){clampKeeper(b);continue}
@@ -761,7 +852,17 @@ function stepPhysics(dt){
     if(b.y<P.y0+b.r){b.y=P.y0+b.r;b.vy=Math.abs(b.vy)*0.35}
     if(b.y>P.y1-b.r){b.y=P.y1-b.r;b.vy=-Math.abs(b.vy)*0.35}
   }
-  if(!M.ballEvent)checkBall();
+  /* sponda sui laterali: la palla rimbalza invece di uscire (niente rimesse) */
+  if(withBall&&!M.ballEvent){
+    const b=M.ball;
+    let hit=false;
+    if(b.x<P.x0+b.r&&b.vx<0){b.x=P.x0+b.r;b.vx=-b.vx*0.72;hit=true}
+    if(b.x>P.x1-b.r&&b.vx>0){b.x=P.x1-b.r;b.vx=-b.vx*0.72;hit=true}
+    if(hit&&Math.abs(b.vx)>P.minSpeed*2&&M.simTime-(M.lastCush||-1)>0.15){
+      M.lastCush=M.simTime;sndBounce();
+    }
+  }
+  if(withBall&&!M.ballEvent)checkBall();
 }
 
 function collide(a,b){
@@ -820,10 +921,6 @@ function checkBall(){
   }else if(b.y>P.y1){
     if(inMouth){M.ballEvent={type:'goal',owner:'r'};b.y=P.y1+P.gd*0.55;b.vx=0;b.vy=0}
     else M.ballEvent={type:'endline',owner:'r',x:b.x,y:P.y1};
-  }else if(b.x<P.x0){
-    M.ballEvent={type:'side',x:P.x0,y:b.y};
-  }else if(b.x>P.x1){
-    M.ballEvent={type:'side',x:P.x1,y:b.y};
   }
   if(M.ballEvent){
     b.vx=0;b.vy=0;
@@ -864,8 +961,7 @@ function resolveTurn(){
   }
   /* 2. FALLO */
   if(F.foul)return freeKick(other(F.team),'FALLO!','PUNIZIONE '+teamName(other(F.team)));
-  /* 3. PALLA FUORI */
-  if(ev&&ev.type==='side')return throwIn(ev);
+  /* 3. PALLA SUL FONDO (di lato rimbalza sulla sponda) */
   if(ev&&ev.type==='endline')return endLine(ev);
   /* 4. TOCCO RIUSCITO: continua lo stesso giocatore */
   if(F.touched){
@@ -895,27 +991,52 @@ function scoreGoal(team,own){
     kickoff(other(team));
   });
 }
+/* y della porta difesa dalla squadra t */
+function goalOf(t){return t==='r'?P.y1:P.y0}
+
+/* Ogni ripresa passa di qui: la palla non finisce mai nella fascia morta e
+   chi batte viene messo dietro la palla dal lato giusto, altrimenti la
+   ripresa e' ingiocabile (era il caso del rinvio: i difensori stavano
+   dietro la palla e potevano solo spingerla verso il proprio portiere). */
+function restart(team,x,y,tx,ty){
+  const b=M.ball;
+  b.x=Math.max(P.x0+P.band,Math.min(P.x1-P.band,x));
+  b.y=Math.max(P.y0+P.band,Math.min(P.y1-P.band,y));
+  b.vx=0;b.vy=0;
+  placeTaker(team,tx,ty);
+  M.turn=team;M.combo=0;M.lastTouch=null;M.shotLegal=false;
+}
+function placeTaker(team,tx,ty){
+  const b=M.ball;
+  const cand=M.pieces.filter(p=>p.team===team&&!p.gk)
+    .sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y))[0];
+  separate(cand);
+  relax();
+  if(!cand)return;
+  let dx=tx-b.x,dy=ty-b.y;
+  const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
+  const gap=cand.r+b.r+3,edge=cand.r*1.05;
+  cand.x=Math.max(P.x0+edge,Math.min(P.x1-edge,b.x-dx*gap));
+  cand.y=Math.max(P.y0+edge,Math.min(P.y1-edge,b.y-dy*gap));
+  cand.vx=0;cand.vy=0;
+}
+/* spostamenti concessi prima di battere: sempre su angolo e rinvio,
+   sulle altre interruzioni solo se l'opzione e' su TUTTE */
+function withMoves(team,always,cb){
+  if(!always&&cfg.moves!=='all')return cb();
+  startMoves([{team:team,n:1},{team:other(team),n:1}],cb);
+}
+
 function freeKick(team,main,sub){
   sndWhistle();
-  M.turn=team;M.combo=0;M.lastTouch=null;M.shotLegal=false;
-  banner(main,sub,team,1200,()=>nextTurn());
+  restart(team,M.ball.x,M.ball.y,P.cx,goalOf(other(team)));
+  banner(main,sub,team,1200,()=>withMoves(team,false,()=>nextTurn()));
 }
 function goalKick(team,main,sub){
   sndWhistle();
-  M.ball.x=P.cx;M.ball.y=ny(team,0.12);M.ball.vx=0;M.ball.vy=0;
-  separate();
-  M.turn=team;M.combo=0;M.lastTouch=null;M.shotLegal=false;
-  banner(main||'RINVIO',sub||('RINVIO '+teamName(team)),team,1200,()=>nextTurn());
-}
-function throwIn(ev){
-  sndWhistle();
-  const team=M.lastTouch?other(M.lastTouch):M.turn;
-  M.ball.x=ev.x+(ev.x<P.cx?1:-1)*M.ball.r*1.6;
-  M.ball.y=Math.max(P.y0+M.ball.r*2,Math.min(P.y1-M.ball.r*2,ev.y));
-  M.ball.vx=0;M.ball.vy=0;
-  separate();
-  M.turn=team;M.combo=0;M.lastTouch=null;M.shotLegal=false;
-  banner('RIMESSA','RIMESSA '+teamName(team),team,1150,()=>nextTurn());
+  restart(team,P.cx,ny(team,0.14),P.cx,ny(team,0.65));
+  banner(main||'RINVIO',sub||('RINVIO '+teamName(team)),team,1200,
+         ()=>withMoves(team,true,()=>nextTurn()));
 }
 function endLine(ev){
   const def=ev.owner;                 /* squadra che difende quella porta */
@@ -924,12 +1045,10 @@ function endLine(ev){
     /* deviata dalla difesa: calcio d'angolo */
     sndWhistle();
     const side=ev.x<P.cx?-1:1;
-    M.ball.x=P.cx+side*(P.w/2-M.ball.r*1.8);
-    M.ball.y=(def==='b'?P.y0:P.y1)+(def==='b'?1:-1)*M.ball.r*1.8;
-    M.ball.vx=0;M.ball.vy=0;
-    separate();
-    M.turn=att;M.combo=0;M.lastTouch=null;M.shotLegal=false;
-    banner('CALCIO D\'ANGOLO','ANGOLO '+teamName(att),att,1250,()=>nextTurn());
+    restart(att,P.cx+side*(P.w/2-P.band),goalOf(def)+(def==='b'?P.band:-P.band),
+            P.cx,goalOf(def));
+    banner('CALCIO D\'ANGOLO','ANGOLO '+teamName(att),att,1250,
+           ()=>withMoves(att,true,()=>nextTurn()));
   }else{
     goalKick(def);
   }
@@ -938,18 +1057,16 @@ function offside(team,n){
   sndWhistle(true);
   const def=other(team);
   /* palla riportata sul limite della zona di tiro */
-  M.ball.y=team==='r'?P.y0+P.zone+M.ball.r*2:P.y1-P.zone-M.ball.r*2;
-  M.ball.x=Math.max(P.x0+M.ball.r*2,Math.min(P.x1-M.ball.r*2,M.ball.x));
-  M.ball.vx=0;M.ball.vy=0;
-  separate();
-  M.turn=def;M.combo=0;M.lastTouch=null;M.shotLegal=false;
-  banner('FUORIGIOCO!',n+' PEDINE '+teamName(team)+' IN ZONA · PUNIZIONE '+teamName(def),def,1600,()=>nextTurn());
+  const y=team==='r'?P.y0+P.zone+M.ball.r*2:P.y1-P.zone-M.ball.r*2;
+  restart(def,M.ball.x,y,P.cx,goalOf(team));
+  banner('FUORIGIOCO!',n+' PEDINE '+teamName(team)+' IN ZONA · PUNIZIONE '+teamName(def),def,1600,
+         ()=>withMoves(def,false,()=>nextTurn()));
 }
-/* allontana le pedine sovrapposte alla palla dopo una rimessa */
-function separate(){
+/* allontana le pedine sovrapposte alla palla dopo una ripresa */
+function separate(except){
   const b=M.ball;
   for(const p of M.pieces){
-    if(p.gk)continue;
+    if(p.gk||p===except)continue;
     const dx=p.x-b.x,dy=p.y-b.y;
     let d=Math.hypot(dx,dy);
     const need=p.r+b.r*3;
@@ -960,6 +1077,42 @@ function separate(){
       p.y=Math.max(P.y0+p.r,Math.min(P.y1-p.r,p.y));
     }
   }
+}
+/* scioglie gli ammassi: pedine sovrapposte spinte via e staccate dal bordo,
+   altrimenti si incolonnano sulla linea e si tolgono la strada a vicenda */
+function relax(){
+  const edge=P.R*1.15;
+  for(let it=0;it<10;it++){
+    let moved=false;
+    for(let i=0;i<M.pieces.length;i++)for(let j=i+1;j<M.pieces.length;j++){
+      const a=M.pieces[i],c=M.pieces[j];
+      if(a.gk&&c.gk)continue;
+      const dx=c.x-a.x,dy=c.y-a.y;
+      let d=Math.hypot(dx,dy);
+      const need=a.r+c.r+1;
+      if(d>=need)continue;
+      if(d<1e-6)d=1e-6;
+      const nx=dx/d,ny=dy/d,push=(need-d)/(a.gk||c.gk?1:2);
+      if(!a.gk){a.x-=nx*push;a.y-=ny*push}
+      if(!c.gk){c.x+=nx*push;c.y+=ny*push}
+      moved=true;
+    }
+    for(const p of M.pieces){
+      if(p.gk)continue;
+      p.x=Math.max(P.x0+edge,Math.min(P.x1-edge,p.x));
+      p.y=Math.max(P.y0+edge,Math.min(P.y1-edge,p.y));
+    }
+    if(!moved)break;
+  }
+}
+/* a fine azione: palla fuori dalla fascia morta, pedine staccate dal bordo */
+function settleBoard(){
+  if(!M.ballEvent){
+    const b=M.ball;
+    b.x=Math.max(P.x0+P.band,Math.min(P.x1-P.band,b.x));
+    b.y=Math.max(P.y0+P.band,Math.min(P.y1-P.band,b.y));
+  }
+  relax();
 }
 
 function endMatch(winner){
@@ -991,7 +1144,8 @@ function loop(ts){
   if(!lastT)lastT=ts||0;
   const dtReal=Math.min(0.05,((ts||0)-lastT)/1000);
   lastT=ts||0;
-  if(M.phase==='sim'){
+  if(M.phase==='sim'||M.phase==='movesim'){
+    const wasMove=M.phase==='movesim';
     acc+=dtReal;
     let done=false;
     while(acc>=DT&&!done){
@@ -1002,7 +1156,11 @@ function loop(ts){
       acc=0;
       M.pieces.forEach(p=>{p.vx=0;p.vy=0});
       M.ball.vx=0;M.ball.vy=0;
-      resolveTurn();
+      settleBoard();
+      if(wasMove){
+        if(M.moveQueue.length)M.moveQueue[0].n--;
+        nextMove();
+      }else resolveTurn();
     }
   }else acc=0;
   draw();
@@ -1115,7 +1273,8 @@ function drawPiece(p){
     ctx.fillStyle='rgba(255,204,0,.85)';ctx.fill();
   }
   /* pedina di turno: anello dorato */
-  const canPlay=M.phase==='aim'&&p.team===M.turn&&!p.gk;
+  const canPlay=!p.gk&&((M.phase==='aim'&&p.team===M.turn)||
+                (M.phase==='move'&&M.moveQueue.length&&p.team===M.moveQueue[0].team));
   if(canPlay){
     ctx.beginPath();ctx.arc(p.x,p.y,p.r*1.22,0,Math.PI*2);
     ctx.strokeStyle='rgba(255,204,0,.75)';ctx.lineWidth=Math.max(1,p.r*0.12);
@@ -1174,8 +1333,8 @@ function drawAim(){
   /* elastico */
   ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.35)';
   ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(d.x,d.y);ctx.stroke();
-  /* traiettoria prevista della palla */
-  const pb=predictBall(p,ux,uy,flickSpeed(power));
+  /* traiettoria prevista della palla (opzionale, spenta di default) */
+  const pb=(cfg.aimline&&M.phase==='aim')?predictBall(p,ux,uy,flickSpeed(power)):null;
   if(pb){
     const b=M.ball;
     const ex=b.x+pb.nx*pb.len,ey=b.y+pb.ny*pb.len;
